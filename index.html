@@ -88,6 +88,12 @@
           <span>دليل المميزات</span>
         </button>
 
+        <!-- زر فيديو الدعاية (Interactive Promo Demo) -->
+        <button class="btn" id="btn-promo-demo" title="صناعة فيديو إعلاني تفاعلي للموقع" style="background: rgba(16, 185, 129, 0.15); border-color: var(--primary); color: var(--primary);">
+          <i class="fa-solid fa-video"></i>
+          <span>فيديو الدعاية 🎥</span>
+        </button>
+
         <!-- زر دعم المشروع (Support Project) -->
         <button class="btn" id="btn-support" title="دعم واستمرارية تطوير الموقع">
           <i class="fa-solid fa-heart text-danger"></i>
@@ -389,6 +395,13 @@
       <button class="btn" id="btn-guide-prev" style="padding: 4px 10px;">السابق</button>
       <button class="btn" id="btn-guide-skip" style="padding: 4px 10px; border-color: var(--danger); color: var(--danger);">تخطي</button>
     </div>
+  </div>
+
+  <!-- Interactive Promo Demo Elements -->
+  <div class="promo-overlay" id="promo-overlay" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.3); z-index: 15000; pointer-events: none; transition: all 0.3s;"></div>
+  <div class="promo-caption" id="promo-caption" style="display: none; position: fixed; bottom: 120px; left: 50%; transform: translateX(-50%); background: rgba(15, 23, 42, 0.95); border: 2px solid var(--primary); padding: 16px 28px; border-radius: 50px; color: white; font-size: 16px; font-weight: bold; z-index: 15001; text-align: center; box-shadow: 0 10px 30px rgba(16, 185, 129, 0.4); direction: rtl; pointer-events: none; animation: bounceSlow 1s infinite alternate;"></div>
+  <div class="promo-cursor" id="promo-cursor" style="display: none; position: absolute; width: 32px; height: 32px; z-index: 15002; pointer-events: none; transition: all 1.2s cubic-bezier(0.19, 1, 0.22, 1); filter: drop-shadow(0 2px 10px rgba(0,0,0,0.5));">
+    <i class="fa-solid fa-arrow-pointer" style="font-size: 28px; color: var(--primary); transform: rotate(-30deg);"></i>
   </div>
 
   <!-- External scripts -->

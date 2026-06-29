@@ -1215,6 +1215,7 @@ function setupEventListeners() {
   
   document.getElementById("btn-play-recording").addEventListener("click", playRecordedAudioWithEffects);
   document.getElementById("btn-verify-recitation").addEventListener("click", verifyUserRecitation);
+  document.getElementById("btn-promo-demo").addEventListener("click", startInteractivePromoDemo);
   
   // Playback of Tafsir msmou'a (Text-to-speech simulation)
   document.getElementById("btn-listen-tafsir").addEventListener("click", () => {
@@ -1507,4 +1508,129 @@ function updateMediaSession(title, artist) {
       navigateAyah(1);
     });
   }
+}
+
+// --- Interactive Promo Video Demonstration Simulator ---
+function startInteractivePromoDemo() {
+  // Stop all active playbacks first
+  stopReciterAudio();
+  if (state.reciterAudio) state.reciterAudio.pause();
+  
+  // Show Promo UI Elements
+  const overlay = document.getElementById("promo-overlay");
+  const caption = document.getElementById("promo-caption");
+  const cursor = document.getElementById("promo-cursor");
+  
+  overlay.style.display = "block";
+  caption.style.display = "block";
+  cursor.style.display = "block";
+  
+  // Disable user input interaction pointer-events for normal elements to prevent clicking during simulation
+  document.body.style.pointerEvents = "none";
+  // Allow clicking on body inside overlay or specific elements
+  overlay.style.pointerEvents = "auto";
+  
+  function updateCaption(text) {
+    caption.textContent = text;
+  }
+  
+  function moveCursor(targetId, callback) {
+    const el = document.getElementById(targetId) || document.querySelector(targetId);
+    if (!el) {
+      if (callback) callback();
+      return;
+    }
+    const rect = el.getBoundingClientRect();
+    cursor.style.top = `${rect.top + window.scrollY + rect.height/2 - 10}px`;
+    cursor.style.left = `${rect.left + window.scrollX + rect.width/2 - 5}px`;
+    
+    setTimeout(() => {
+      // Simulate "click" visual ripple
+      el.style.transform = "scale(0.95)";
+      setTimeout(() => {
+        el.style.transform = "";
+        if (callback) callback(el);
+      }, 150);
+    }, 1200);
+  }
+  
+  // --- Start Simulation Timeline ---
+  
+  // Step 1: Start Recitation Playback
+  updateCaption("1️⃣ تشغيل تلاوة القارئ لتثبيت النطق الصحيح وتتبع الكلمات متزامنة... 📖🎧");
+  moveCursor("btn-play-pause", (playBtn) => {
+    // Start playback
+    playReciterAudio();
+    
+    // Wait 6 seconds for recitation karaoke display
+    setTimeout(() => {
+      // Step 2: Pause Recitation and prepare to record
+      updateCaption("2️⃣ إيقاف التلاوة المؤقت والذهاب لتسجيل التسميع الذاتي بصوت المستخدم... 🎙️");
+      moveCursor("btn-play-pause", (pauseBtn) => {
+        pauseReciterAudio();
+        
+        // Move to Microphone button
+        setTimeout(() => {
+          updateCaption("3️⃣ يضغط المستخدم على الميكروفون ويبدأ بالتسميع، وتظهر ذبذبات تفاعلية حية... 🔴⚡");
+          moveCursor("btn-mic", (micBtn) => {
+            // Simulate mic recording UI (without demanding raw permission)
+            micBtn.classList.add("recording");
+            const visualizer = document.getElementById("visualizer");
+            const timerLabel = document.getElementById("timer-label");
+            
+            // Animate recording timer
+            let seconds = 0;
+            const timerInterval = setInterval(() => {
+              seconds++;
+              timerLabel.textContent = `00:0${seconds}`;
+            }, 1000);
+            
+            // Let it simulate recording for 5 seconds
+            setTimeout(() => {
+              clearInterval(timerInterval);
+              micBtn.classList.remove("recording");
+              timerLabel.textContent = "00:00";
+              
+              // Enable play recording button
+              const playRecBtn = document.getElementById("btn-play-recording");
+              playRecBtn.disabled = false;
+              
+              // Step 3: Choose Mosque Echo Effect
+              updateCaption("4️⃣ اختيار مؤثر \"صدى مسجد\" الفخم لإضافة هندسة صوتية مذهلة للتلاوة... 🕌🔊");
+              const echoChip = document.querySelector('[data-effect="echo"]');
+              moveCursor('[data-effect="echo"]', (chip) => {
+                document.querySelectorAll(".effect-chip").forEach(c => c.classList.remove("active"));
+                chip.classList.add("active");
+                state.audioEffect = "echo";
+                
+                // Step 4: Play self recitation with echo
+                setTimeout(() => {
+                  updateCaption("5️⃣ الاستماع للتسميع الذاتي بصوتك نقيًا ومضافًا إليه صدى المسجد الرائع! 🎧🌟");
+                  moveCursor("btn-play-recording", (playRec) => {
+                    // Highlight playback
+                    playRec.classList.add("active");
+                    
+                    // Animate visualizer placeholder or progress
+                    setTimeout(() => {
+                      playRec.classList.remove("active");
+                      
+                      // End of Demo Walkthrough
+                      updateCaption("🎉 اكتمل العرض بنجاح! يمكنك تصوير شاشتك الآن لصنع فيديو الدعاية الخاص بك بكل سهولة.");
+                      setTimeout(() => {
+                        // Cleanup
+                        overlay.style.display = "none";
+                        caption.style.display = "none";
+                        cursor.style.display = "none";
+                        document.body.style.pointerEvents = "auto";
+                      }, 4000);
+                    }, 6000);
+                  });
+                }, 1500);
+              });
+            }, 5000);
+          });
+        }, 1000);
+      });
+    }, 6000);
+  });
 }
