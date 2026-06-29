@@ -1283,7 +1283,12 @@ function setupEventListeners() {
   document.addEventListener("click", (e) => {
     const sidebar = document.querySelector(".app-sidebar");
     const toggleBtn = document.getElementById("btn-toggle-sidebar");
-    if (sidebar.classList.contains("open") && !sidebar.contains(e.target) && !toggleBtn.contains(e.target)) {
+    const tooltip = document.getElementById("guide-tooltip");
+    
+    if (sidebar && sidebar.classList.contains("open") && 
+        !sidebar.contains(e.target) && 
+        !toggleBtn.contains(e.target) &&
+        !(tooltip && tooltip.contains(e.target))) {
       sidebar.classList.remove("open");
     }
   });
