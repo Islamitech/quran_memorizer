@@ -1118,6 +1118,10 @@ body {
     font-size: 32px; /* Scale down Uthmanic font on mobile screen */
   }
 
+.progress-mobile-badge {
+  display: none;
+}
+
   /* Thin bottom progress bar for mobile and mini desktop modes */
   .progress-tracker {
     position: absolute;
@@ -1130,8 +1134,8 @@ body {
     padding: 0;
     z-index: 10;
   }
-  .progress-tracker::before {
-    content: attr(data-label);
+  .progress-mobile-badge {
+    display: block;
     position: absolute;
     bottom: 4px;
     left: 50%;
