@@ -1216,6 +1216,23 @@ function setupEventListeners() {
   document.getElementById("btn-play-recording").addEventListener("click", playRecordedAudioWithEffects);
   document.getElementById("btn-verify-recitation").addEventListener("click", verifyUserRecitation);
   
+  // Share Application link listener
+  const shareBtn = document.getElementById("btn-share-app");
+  if (shareBtn) {
+    shareBtn.addEventListener("click", () => {
+      if (navigator.share) {
+        navigator.share({
+          title: "محفّظ القرآن الكريم",
+          text: "منصة تفاعلية ذكية لتسهيل حفظ وتسميع ومراجعة القرآن الكريم صوتياً أونلاين وأوفلاين.",
+          url: window.location.href
+        }).catch(err => console.log(err));
+      } else {
+        navigator.clipboard.writeText(window.location.href);
+        alert("📋 تم نسخ رابط التطبيق بنجاح! شاركه الآن مع أحبابك لتكسب الأجر.");
+      }
+    });
+  }
+  
   // Playback of Tafsir msmou'a (Text-to-speech simulation)
   document.getElementById("btn-listen-tafsir").addEventListener("click", () => {
     if (!state.surahData) return;
