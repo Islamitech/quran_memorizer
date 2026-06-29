@@ -747,6 +747,15 @@ function stopAudioRecording() {
   if (mobileRecBar) {
     mobileRecBar.style.display = "none";
   }
+  const recVerseCard = document.getElementById("mobile-rec-verse-card");
+  if (recVerseCard) {
+    recVerseCard.style.display = "none";
+  }
+  const toggleRecVerseBtn = document.getElementById("btn-toggle-rec-verse");
+  if (toggleRecVerseBtn) {
+    toggleRecVerseBtn.querySelector("span").textContent = "عرض الآية";
+    toggleRecVerseBtn.querySelector("i").className = "fa-solid fa-eye";
+  }
   const isMobile = window.innerWidth <= 768;
   if (isMobile) {
     const sidebar = document.querySelector(".app-sidebar");
@@ -1244,6 +1253,24 @@ function setupEventListeners() {
       stopAudioRecording();
     });
   }
+  const toggleRecVerseBtn = document.getElementById("btn-toggle-rec-verse");
+  if (toggleRecVerseBtn) {
+    toggleRecVerseBtn.addEventListener("click", () => {
+      const recVerseCard = document.getElementById("mobile-rec-verse-card");
+      if (recVerseCard.style.display === "none") {
+        const activeText = document.querySelector("#active-verse-card .verse-arabic-text")?.textContent || 
+                           state.activeVerseWords.map(w => w.word).join(" ");
+        document.getElementById("mobile-rec-verse-text").textContent = activeText;
+        recVerseCard.style.display = "block";
+        toggleRecVerseBtn.querySelector("span").textContent = "إخفاء الآية";
+        toggleRecVerseBtn.querySelector("i").className = "fa-solid fa-eye-slash";
+      } else {
+        recVerseCard.style.display = "none";
+        toggleRecVerseBtn.querySelector("span").textContent = "عرض الآية";
+        toggleRecVerseBtn.querySelector("i").className = "fa-solid fa-eye";
+      }
+    });
+  }
   document.getElementById("btn-share-app").addEventListener("click", () => {
     const shareData = {
       title: "محفّظ القرآن الكريم 🤲",
@@ -1312,7 +1339,16 @@ function setupEventListeners() {
   document.addEventListener("click", (e) => {
     const sidebar = document.querySelector(".app-sidebar");
     const toggleBtn = document.getElementById("btn-toggle-sidebar");
-    if (sidebar.classList.contains("open") && !sidebar.contains(e.target) && !toggleBtn.contains(e.target)) {
+    const guideTooltip = document.getElementById("guide-tooltip");
+    const guideOverlay = document.getElementById("guide-overlay");
+    
+    if (
+      sidebar.classList.contains("open") && 
+      !sidebar.contains(e.target) && 
+      !toggleBtn.contains(e.target) &&
+      (!guideTooltip || !guideTooltip.contains(e.target)) &&
+      e.target !== guideOverlay
+    ) {
       sidebar.classList.remove("open");
     }
   });

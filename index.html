@@ -423,15 +423,27 @@
   </div>
 
   <!-- Mobile Recording Floating Control Bar -->
-  <div id="mobile-rec-bar" style="display: none; position: fixed; bottom: 85px; left: 16px; right: 16px; background: rgba(220, 38, 38, 0.95); backdrop-filter: blur(8px); padding: 12px 16px; border-radius: var(--radius-md); color: white; align-items: center; justify-content: space-between; z-index: 10000; box-shadow: 0 10px 25px rgba(220, 38, 38, 0.4); direction: rtl;">
-    <div style="display: flex; align-items: center; gap: 10px;">
-      <span class="recording-blink-dot" style="width: 10px; height: 10px; background: white; border-radius: 50%; display: inline-block;"></span>
-      <span style="font-weight: bold; font-size: 13px;">جاري تسجيل تلاوتك... اقرأ الآية بوضوح 🎙️</span>
+  <div id="mobile-rec-bar" style="display: none; position: fixed; bottom: 85px; left: 16px; right: 16px; background: rgba(220, 38, 38, 0.95); backdrop-filter: blur(8px); padding: 12px 16px; border-radius: var(--radius-md); color: white; align-items: center; justify-content: space-between; z-index: 10000; box-shadow: 0 10px 25px rgba(220, 38, 38, 0.4); direction: rtl; gap: 8px;">
+    <div style="display: flex; align-items: center; gap: 8px; flex-grow: 1;">
+      <span class="recording-blink-dot" style="width: 10px; height: 10px; background: white; border-radius: 50%; display: inline-block; flex-shrink: 0;"></span>
+      <span style="font-weight: bold; font-size: 12px; white-space: nowrap;">جاري تسجيل تلاوتك... 🎙️</span>
     </div>
-    <button id="btn-stop-mobile-rec" style="background: white; border: none; padding: 6px 12px; border-radius: var(--radius-sm); color: #dc2626; font-weight: bold; font-size: 12px; cursor: pointer; display: flex; align-items: center; gap: 4px;">
-      <i class="fa-solid fa-square"></i>
-      <span>إنهاء وتصحيح</span>
-    </button>
+    <div style="display: flex; gap: 8px;">
+      <button id="btn-toggle-rec-verse" style="background: rgba(255, 255, 255, 0.2); border: 1px solid rgba(255, 255, 255, 0.3); padding: 6px 10px; border-radius: var(--radius-sm); color: white; font-weight: bold; font-size: 11px; cursor: pointer; display: flex; align-items: center; gap: 4px;">
+        <i class="fa-solid fa-eye"></i>
+        <span>عرض الآية</span>
+      </button>
+      <button id="btn-stop-mobile-rec" style="background: white; border: none; padding: 6px 12px; border-radius: var(--radius-sm); color: #dc2626; font-weight: bold; font-size: 11px; cursor: pointer; display: flex; align-items: center; gap: 4px;">
+        <i class="fa-solid fa-square"></i>
+        <span>إنهاء</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Floating Verse helper card during recording -->
+  <div id="mobile-rec-verse-card" style="display: none; position: fixed; bottom: 150px; left: 16px; right: 16px; background: rgba(15, 23, 42, 0.95); border: 2px solid var(--primary); backdrop-filter: blur(8px); padding: 16px; border-radius: var(--radius-md); color: white; z-index: 10000; box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5); direction: rtl; text-align: center;">
+    <div style="font-size: 11px; color: var(--primary); margin-bottom: 8px; font-weight: bold; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 4px;">الآية الكريمة للتسميع 📖</div>
+    <div id="mobile-rec-verse-text" style="font-family: var(--font-quran); font-size: 24px; line-height: 1.8; color: #fef3c7; max-height: 150px; overflow-y: auto;">الآية تظهر هنا...</div>
   </div>
 
   <!-- External scripts -->

@@ -1124,7 +1124,22 @@ body {
   }
   
   .progress-tracker {
-    display: none; /* Hide progress bar in header on tiny mobile screens to save space */
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    width: 100% !important;
+    height: 4px;
+    gap: 0;
+  }
+  .progress-header {
+    display: none !important; /* Hide label texts in header on mobile */
+  }
+  .progress-bar-container {
+    height: 4px !important;
+    border: none !important;
+    border-radius: 0 !important;
+    background: rgba(255, 255, 255, 0.05);
   }
 
   /* Compact header buttons: hide text and make them circles */
