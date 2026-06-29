@@ -120,6 +120,7 @@ body {
 
 /* Header & Tracker */
 .app-header {
+  position: relative;
   grid-area: header;
   display: flex;
   align-items: center;
@@ -1115,14 +1116,8 @@ body {
   .active-verse-card {
     font-size: 32px; /* Scale down Uthmanic font on mobile screen */
   }
-}
 
-@media (max-width: 600px) {
-  /* Compact Header for mobile phones */
-  .logo-text {
-    font-size: 16px;
-  }
-  
+  /* Thin bottom progress bar for mobile and mini desktop modes */
   .progress-tracker {
     position: absolute;
     bottom: 0;
@@ -1147,6 +1142,13 @@ body {
   .progress-tracker .progress-bar-fill {
     height: 4px !important;
     border-radius: 0 !important;
+  }
+}
+
+@media (max-width: 600px) {
+  /* Compact Header for mobile phones */
+  .logo-text {
+    font-size: 16px;
   }
 
   /* Compact header buttons: hide text and make them circles */
