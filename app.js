@@ -43,7 +43,8 @@ const state = {
   isSpeechRecognitionActive: false,
   
   // Onboarding Onboarding Tour Step
-  currentGuideStep: 0
+  currentGuideStep: 0,
+  currentGuideStepDirection: "next"
 };
 
 // Onboarding Tour Steps Configuration
@@ -1330,38 +1331,68 @@ function renderGuideStep() {
     return;
   }
   
-  // Highlight target element box calculation
-  const rect = targetEl.getBoundingClientRect();
-  const pad = 6;
+  // Handle mobile/narrow sidebar drawer opening/closing automatically
+  const sidebar = document.querySelector(".app-sidebar");
+  const isSidebarStep = ["guide-surah-select", "guide-reciter-select", "guide-recorder"].includes(step.elementId);
   
-  highlightEl.style.width = `${rect.width + pad * 2}px`;
-  highlightEl.style.height = `${rect.height + pad * 2}px`;
-  highlightEl.style.top = `${rect.top - pad + window.scrollY}px`;
-  highlightEl.style.left = `${rect.left - pad + window.scrollX}px`;
-  highlightEl.style.display = "block";
-  
-  // Tooltip content & positions calculations
-  document.getElementById("guide-tooltip-title").textContent = step.title;
-  document.getElementById("guide-tooltip-desc").textContent = step.desc;
-  
-  tooltipEl.style.display = "block";
-  
-  // Compute best tooltip layout positions
-  const tooltipRect = tooltipEl.getBoundingClientRect();
-  let toolTop = rect.bottom + 12 + window.scrollY;
-  let toolLeft = rect.left + (rect.width / 2) - (tooltipRect.width / 2) + window.scrollX;
-  
-  // Constrain limits
-  if (toolLeft < 10) toolLeft = 10;
-  if (toolLeft + tooltipRect.width > window.innerWidth - 10) {
-    toolLeft = window.innerWidth - tooltipRect.width - 10;
-  }
-  if (toolTop + tooltipRect.height > window.innerHeight) {
-    toolTop = rect.top - tooltipRect.height - 12 + window.scrollY;
+  let stateChanged = false;
+  if (isSidebarStep && !sidebar.classList.contains("open")) {
+    sidebar.classList.add("open");
+    stateChanged = true;
+  } else if (!isSidebarStep && sidebar.classList.contains("open")) {
+    sidebar.classList.remove("open");
+    stateChanged = true;
   }
   
-  tooltipEl.style.top = `${toolTop}px`;
-  tooltipEl.style.left = `${toolLeft}px`;
+  // If target element is completely hidden on mobile/responsive (display: none or 0x0 size)
+  // Skip it automatically based on direction
+  const isHidden = targetEl.offsetWidth === 0 && targetEl.offsetHeight === 0;
+  if (isHidden && !isSidebarStep) {
+    if (state.currentGuideStepDirection === "prev") {
+      prevGuideStep();
+    } else {
+      nextGuideStep();
+    }
+    return;
+  }
+  
+  // Set layout calculation after a delay if sidebar slides, so coordinates are computed correctly
+  const delay = stateChanged ? 450 : 50;
+  
+  setTimeout(() => {
+    // Highlight target element box calculation
+    const rect = targetEl.getBoundingClientRect();
+    const pad = 6;
+    
+    highlightEl.style.width = `${rect.width + pad * 2}px`;
+    highlightEl.style.height = `${rect.height + pad * 2}px`;
+    highlightEl.style.top = `${rect.top - pad + window.scrollY}px`;
+    highlightEl.style.left = `${rect.left - pad + window.scrollX}px`;
+    highlightEl.style.display = "block";
+    
+    // Tooltip content & positions calculations
+    document.getElementById("guide-tooltip-title").textContent = step.title;
+    document.getElementById("guide-tooltip-desc").textContent = step.desc;
+    
+    tooltipEl.style.display = "block";
+    
+    // Compute best tooltip layout positions
+    const tooltipRect = tooltipEl.getBoundingClientRect();
+    let toolTop = rect.bottom + 12 + window.scrollY;
+    let toolLeft = rect.left + (rect.width / 2) - (tooltipRect.width / 2) + window.scrollX;
+    
+    // Constrain limits
+    if (toolLeft < 10) toolLeft = 10;
+    if (toolLeft + tooltipRect.width > window.innerWidth - 10) {
+      toolLeft = window.innerWidth - tooltipRect.width - 10;
+    }
+    if (toolTop + tooltipRect.height > window.innerHeight) {
+      toolTop = rect.top - tooltipRect.height - 12 + window.scrollY;
+    }
+    
+    tooltipEl.style.top = `${toolTop}px`;
+    tooltipEl.style.left = `${toolLeft}px`;
+  }, delay);
   
   // Set button contents
   const nextBtn = document.getElementById("btn-guide-next");
@@ -1376,6 +1407,7 @@ function renderGuideStep() {
 }
 
 function nextGuideStep() {
+  state.currentGuideStepDirection = "next";
   if (state.currentGuideStep < GUIDE_STEPS.length - 1) {
     state.currentGuideStep++;
     renderGuideStep();
@@ -1385,6 +1417,7 @@ function nextGuideStep() {
 }
 
 function prevGuideStep() {
+  state.currentGuideStepDirection = "prev";
   if (state.currentGuideStep > 0) {
     state.currentGuideStep--;
     renderGuideStep();
@@ -1395,6 +1428,7 @@ function endOnboardingTour() {
   document.getElementById("guide-overlay").style.display = "none";
   document.getElementById("guide-highlight").style.display = "none";
   document.getElementById("guide-tooltip").style.display = "none";
+  document.querySelector(".app-sidebar").classList.remove("open");
   localStorage.setItem("guide_completed", "true");
 }
 
