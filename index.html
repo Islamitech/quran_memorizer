@@ -422,6 +422,18 @@
     <i class="fa-solid fa-arrow-pointer" style="font-size: 28px; color: var(--primary); transform: rotate(-30deg);"></i>
   </div>
 
+  <!-- Mobile Recording Floating Control Bar -->
+  <div id="mobile-rec-bar" style="display: none; position: fixed; bottom: 85px; left: 16px; right: 16px; background: rgba(220, 38, 38, 0.95); backdrop-filter: blur(8px); padding: 12px 16px; border-radius: var(--radius-md); color: white; align-items: center; justify-content: space-between; z-index: 10000; box-shadow: 0 10px 25px rgba(220, 38, 38, 0.4); direction: rtl;">
+    <div style="display: flex; align-items: center; gap: 10px;">
+      <span class="recording-blink-dot" style="width: 10px; height: 10px; background: white; border-radius: 50%; display: inline-block;"></span>
+      <span style="font-weight: bold; font-size: 13px;">جاري تسجيل تلاوتك... اقرأ الآية بوضوح 🎙️</span>
+    </div>
+    <button id="btn-stop-mobile-rec" style="background: white; border: none; padding: 6px 12px; border-radius: var(--radius-sm); color: #dc2626; font-weight: bold; font-size: 12px; cursor: pointer; display: flex; align-items: center; gap: 4px;">
+      <i class="fa-solid fa-square"></i>
+      <span>إنهاء وتصحيح</span>
+    </button>
+  </div>
+
   <!-- External scripts -->
   <script src="quran_data.js"></script>
   <script src="app.js"></script>

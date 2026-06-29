@@ -705,6 +705,17 @@ async function startAudioRecording() {
       state.speechRecognition.start();
     }
     
+    // Auto-hide sidebar drawer on mobile to allow distraction-free reading of verses during recording
+    const sidebar = document.querySelector(".app-sidebar");
+    const isMobile = window.innerWidth <= 768;
+    if (isMobile) {
+      sidebar.classList.remove("open");
+      const mobileRecBar = document.getElementById("mobile-rec-bar");
+      if (mobileRecBar) {
+        mobileRecBar.style.display = "flex";
+      }
+    }
+    
   } catch (err) {
     console.error("Recording error:", err);
     alert("تعذر الوصول للميكروفون. يرجى إعطاء الصلاحية للموقع لتسجيل التسميع.");
@@ -729,6 +740,17 @@ function stopAudioRecording() {
   // Stop Speech Recognition
   if (state.speechRecognition) {
     state.speechRecognition.stop();
+  }
+
+  // Hide mobile recording floating bar and slide open the sidebar on mobile to view controls/results
+  const mobileRecBar = document.getElementById("mobile-rec-bar");
+  if (mobileRecBar) {
+    mobileRecBar.style.display = "none";
+  }
+  const isMobile = window.innerWidth <= 768;
+  if (isMobile) {
+    const sidebar = document.querySelector(".app-sidebar");
+    sidebar.classList.add("open");
   }
 }
 
@@ -1216,6 +1238,12 @@ function setupEventListeners() {
   document.getElementById("btn-play-recording").addEventListener("click", playRecordedAudioWithEffects);
   document.getElementById("btn-verify-recitation").addEventListener("click", verifyUserRecitation);
   document.getElementById("btn-promo-demo").addEventListener("click", startInteractivePromoDemo);
+  const stopMobileRecBtn = document.getElementById("btn-stop-mobile-rec");
+  if (stopMobileRecBtn) {
+    stopMobileRecBtn.addEventListener("click", () => {
+      stopAudioRecording();
+    });
+  }
   document.getElementById("btn-share-app").addEventListener("click", () => {
     const shareData = {
       title: "محفّظ القرآن الكريم 🤲",
@@ -1322,48 +1350,73 @@ function startOnboardingTour() {
 
 function renderGuideStep() {
   const step = GUIDE_STEPS[state.currentGuideStep];
-  const highlightEl = document.getElementById("guide-highlight");
-  const tooltipEl = document.getElementById("guide-tooltip");
-  const targetEl = document.getElementById(step.elementId);
+  const sidebar = document.querySelector(".app-sidebar");
+  const isMobile = window.innerWidth <= 768;
   
-  if (!targetEl) {
-    // If element doesn't exist, skip to next
-    nextGuideStep();
-    return;
+  let openedSidebar = false;
+  let closedSidebar = false;
+  
+  if (isMobile) {
+    const isSidebarElement = ["guide-surah-select", "guide-reciter-select", "guide-recorder"].includes(step.elementId);
+    if (isSidebarElement) {
+      if (!sidebar.classList.contains("open")) {
+        sidebar.classList.add("open");
+        openedSidebar = true;
+      }
+    } else {
+      if (sidebar.classList.contains("open")) {
+        sidebar.classList.remove("open");
+        closedSidebar = true;
+      }
+    }
   }
   
-  // Highlight target element box calculation
-  const rect = targetEl.getBoundingClientRect();
-  const pad = 6;
+  // Defer calculations if we toggled the sidebar to wait for smooth CSS transitions
+  const delay = (openedSidebar || closedSidebar) ? 450 : 0;
   
-  highlightEl.style.width = `${rect.width + pad * 2}px`;
-  highlightEl.style.height = `${rect.height + pad * 2}px`;
-  highlightEl.style.top = `${rect.top - pad + window.scrollY}px`;
-  highlightEl.style.left = `${rect.left - pad + window.scrollX}px`;
-  highlightEl.style.display = "block";
-  
-  // Tooltip content & positions calculations
-  document.getElementById("guide-tooltip-title").textContent = step.title;
-  document.getElementById("guide-tooltip-desc").textContent = step.desc;
-  
-  tooltipEl.style.display = "block";
-  
-  // Compute best tooltip layout positions
-  const tooltipRect = tooltipEl.getBoundingClientRect();
-  let toolTop = rect.bottom + 12 + window.scrollY;
-  let toolLeft = rect.left + (rect.width / 2) - (tooltipRect.width / 2) + window.scrollX;
-  
-  // Constrain limits
-  if (toolLeft < 10) toolLeft = 10;
-  if (toolLeft + tooltipRect.width > window.innerWidth - 10) {
-    toolLeft = window.innerWidth - tooltipRect.width - 10;
-  }
-  if (toolTop + tooltipRect.height > window.innerHeight) {
-    toolTop = rect.top - tooltipRect.height - 12 + window.scrollY;
-  }
-  
-  tooltipEl.style.top = `${toolTop}px`;
-  tooltipEl.style.left = `${toolLeft}px`;
+  setTimeout(() => {
+    const highlightEl = document.getElementById("guide-highlight");
+    const tooltipEl = document.getElementById("guide-tooltip");
+    const targetEl = document.getElementById(step.elementId);
+    
+    if (!targetEl) {
+      nextGuideStep();
+      return;
+    }
+    
+    // Highlight target element box calculation
+    const rect = targetEl.getBoundingClientRect();
+    const pad = 6;
+    
+    highlightEl.style.width = `${rect.width + pad * 2}px`;
+    highlightEl.style.height = `${rect.height + pad * 2}px`;
+    highlightEl.style.top = `${rect.top - pad + window.scrollY}px`;
+    highlightEl.style.left = `${rect.left - pad + window.scrollX}px`;
+    highlightEl.style.display = "block";
+    
+    // Tooltip content & positions calculations
+    document.getElementById("guide-tooltip-title").textContent = step.title;
+    document.getElementById("guide-tooltip-desc").textContent = step.desc;
+    
+    tooltipEl.style.display = "block";
+    
+    // Compute best tooltip layout positions
+    const tooltipRect = tooltipEl.getBoundingClientRect();
+    let toolTop = rect.bottom + 12 + window.scrollY;
+    let toolLeft = rect.left + (rect.width / 2) - (tooltipRect.width / 2) + window.scrollX;
+    
+    // Constrain limits
+    if (toolLeft < 10) toolLeft = 10;
+    if (toolLeft + tooltipRect.width > window.innerWidth - 10) {
+      toolLeft = window.innerWidth - tooltipRect.width - 10;
+    }
+    if (toolTop + tooltipRect.height > window.innerHeight) {
+      toolTop = rect.top - tooltipRect.height - 12 + window.scrollY;
+    }
+    
+    tooltipEl.style.top = `${toolTop}px`;
+    tooltipEl.style.left = `${toolLeft}px`;
+  }, delay);
   
   // Set button contents
   const nextBtn = document.getElementById("btn-guide-next");
