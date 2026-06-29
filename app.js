@@ -1216,6 +1216,24 @@ function setupEventListeners() {
   document.getElementById("btn-play-recording").addEventListener("click", playRecordedAudioWithEffects);
   document.getElementById("btn-verify-recitation").addEventListener("click", verifyUserRecitation);
   document.getElementById("btn-promo-demo").addEventListener("click", startInteractivePromoDemo);
+  document.getElementById("btn-share-app").addEventListener("click", () => {
+    const shareData = {
+      title: "محفّظ القرآن الكريم 🤲",
+      text: "🌸 صدقة جارية 🌸\nيسعدني مشاركتكم تطبيق \"محفّظ القرآن الكريم\" - منصة تفاعلية مذهلة لتسهيل حفظ ومراجعة القرآن صوتياً مع ميزات رائعة مثل صدى المسجد والتحقق الذكي!\nجربه الآن وشاركه مع أحبابك:",
+      url: "https://islamitech.github.io/quran_memorizer/"
+    };
+    
+    if (navigator.share) {
+      navigator.share(shareData)
+        .then(() => console.log("Shared successfully"))
+        .catch((err) => console.log("Error sharing:", err));
+    } else {
+      // Fallback copy to clipboard
+      const copyText = `${shareData.text}\n${shareData.url}`;
+      navigator.clipboard.writeText(copyText)
+        .then(() => alert("📋 تم نسخ الرابط والنص الدعائي بنجاح! شاركه الآن مع أحبابك."));
+    }
+  });
   
   // Playback of Tafsir msmou'a (Text-to-speech simulation)
   document.getElementById("btn-listen-tafsir").addEventListener("click", () => {
