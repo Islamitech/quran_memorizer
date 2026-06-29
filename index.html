@@ -1,0 +1,398 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl" data-theme="dark" data-child-mode="false">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <!-- SEO Primary Meta Tags -->
+  <title>محفّظ القرآن الكريم - منصة التسميع والحفظ الذكية</title>
+  <meta name="description" content="منصة تفاعلية ذكية لتسهيل حفظ ومراجعة وتسميع القرآن الكريم صوتياً مع ميزات التحقق الذكي، صدى المسجد، ووضع الأطفال المبهج.">
+  <meta name="keywords" content="قرآن كريم, تحفيظ القرآن, تسميع القرآن, صدى مسجد, وضع الأطفال, PWA, حفظ القرآن">
+  <meta name="author" content="AEzalden">
+
+  <!-- Open Graph / Facebook Meta Tags -->
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://islamitech.github.io/quran_memorizer/">
+  <meta property="og:title" content="محفّظ القرآن الكريم 🤲 - منصة التسميع الذكية">
+  <meta property="og:description" content="تطبيق تفاعلي مبسط لتسهيل حفظ وتسميع القرآن الكريم بصوتك. استمع للقراء المفضلين، سجل تلاوتك بصوت نقي أو بصدى صوت المسجد، وتابع تقدمك بكل سهولة.">
+  <meta property="og:image" content="icon.svg">
+
+  <!-- Twitter Meta Tags -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:url" content="https://islamitech.github.io/quran_memorizer/">
+  <meta name="twitter:title" content="محفّظ القرآن الكريم 🤲 - منصة التسميع الذكية">
+  <meta name="twitter:description" content="تطبيق تفاعلي مبسط لتسهيل حفظ وتسميع القرآن الكريم بصوتك مع ميزات التحقق الذكي وصدى المسجد.">
+  <meta name="twitter:image" content="icon.svg">
+
+  <!-- Favicon Branding -->
+  <link rel="icon" type="image/svg+xml" href="icon.svg">
+  <link rel="apple-touch-icon" href="icon.svg">
+  
+  <!-- FontAwesome for Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  
+  <!-- PWA Manifest & Meta -->
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#0b0f19">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="محفّظ القرآن">
+  
+  <!-- Main Stylesheet -->
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+  <div class="app-container">
+    
+    <!-- 1️⃣ شريط الأدوات العلوي ومؤشر التقدم (Header & Tracker) -->
+    <header class="app-header" id="guide-header">
+      <div class="logo-section">
+        <!-- زر فتح القائمة الجانبية في الهاتف -->
+        <button class="btn" id="btn-toggle-sidebar" style="padding: 6px 12px; margin-left: 8px;" title="فتح الإعدادات والتسميع">
+          <i class="fa-solid fa-bars"></i>
+        </button>
+        <i class="fa-solid fa-quran logo-icon"></i>
+        <h1 class="logo-text">محفّظ القرآن</h1>
+      </div>
+
+      <!-- مؤشر التقدم في حفظ السورة (Progress Bar) -->
+      <div class="progress-tracker" id="guide-progress">
+        <div class="progress-header">
+          <span id="progress-surah-label">سورة الملك</span>
+          <span id="progress-percentage-label">0%</span>
+        </div>
+        <div class="progress-bar-container">
+          <div class="progress-bar-fill" id="progress-fill"></div>
+        </div>
+        <div class="progress-motivation" id="progress-motivation">ابدأ التلاوة والتسميع اليوم!</div>
+      </div>
+
+      <!-- أزرار التحكم والميزات -->
+      <div class="header-actions">
+        <!-- زر تنزيل التطبيق PWA (Install Button) -->
+        <button class="btn btn-primary" id="btn-install" style="display: none;" title="تنزيل التطبيق على الهاتف أو الكمبيوتر">
+          <i class="fa-solid fa-download"></i>
+          <span>تنزيل التطبيق</span>
+        </button>
+
+        <!-- زر وضع الأطفال (Child Mode) -->
+        <button class="btn btn-child-mode" id="btn-child-mode" title="تحويل المنصة لوضع الأطفال">
+          <i class="fa-solid fa-baby"></i>
+          <span>وضع الأطفال</span>
+        </button>
+
+        <!-- زر دليل المميزات (Features Guide) -->
+        <button class="btn" id="btn-guide" title="دليل تفاعلي سريع للموقع">
+          <i class="fa-solid fa-wand-magic-sparkles"></i>
+          <span>دليل المميزات</span>
+        </button>
+
+        <!-- زر دعم المشروع (Support Project) -->
+        <button class="btn" id="btn-support" title="دعم واستمرارية تطوير الموقع">
+          <i class="fa-solid fa-heart text-danger"></i>
+          <span>دعم المشروع</span>
+        </button>
+
+        <!-- زر وضع الاستماع (Listening Mode) -->
+        <button class="btn btn-primary" id="btn-listening" title="استماع متواصل للسور">
+          <i class="fa-solid fa-headphones"></i>
+          <span>وضع الاستماع</span>
+        </button>
+      </div>
+    </header>
+
+    <!-- 3️⃣ لوحة التحكم الجانبية (Settings & Recorder Sidebar) -->
+    <aside class="app-sidebar">
+      
+      <!-- إعدادات القراءة واختيار السور -->
+      <div class="sidebar-section" id="guide-surah-select">
+        <h3>
+          <i class="fa-solid fa-book-open"></i>
+          <span>اختيار السورة الكريمة</span>
+        </h3>
+        
+        <div class="search-container">
+          <input type="text" class="search-input" id="surah-search" placeholder="ابحث باسم السورة (بدون تشكيل)...">
+          <i class="fa-solid fa-magnifying-glass search-icon"></i>
+        </div>
+
+        <div class="surah-list-wrapper">
+          <div id="surah-list">
+            <!-- Dynamically populated -->
+          </div>
+        </div>
+      </div>
+
+      <!-- الشيخ القارئ ومستوى التلاوة -->
+      <div class="sidebar-section" id="guide-reciter-select">
+        <h3>
+          <i class="fa-solid fa-microphone-lines"></i>
+          <span>القارئ المفضل</span>
+        </h3>
+        
+        <div class="form-group">
+          <label for="reciter-select">اختر الشيخ القارئ:</label>
+          <select class="form-select" id="reciter-select">
+            <option value="everyayah.faresabbad" data-child-friendly="false" selected>الشيخ فارس عباد</option>
+            <option value="ar.minshawi" data-child-friendly="true">الشيخ محمد صديق المنشاوي (المعلم 👶)</option>
+            <option value="ar.alafasy" data-child-friendly="false">الشيخ مشاري العفاسي</option>
+            <option value="ar.husary" data-child-friendly="false">الشيخ محمود خليل الحصري</option>
+            <option value="ar.mahermuaiqly" data-child-friendly="false">الشيخ ماهر المعيقلي</option>
+            <option value="ar.abdurrahmaansudais" data-child-friendly="false">الشيخ عبد الرحمن السديس</option>
+            <option value="ar.abdulbasitmurattal" data-child-friendly="false">الشيخ عبد الباسط عبد الصمد</option>
+            <option value="ar.aymanswoaid" data-child-friendly="true">الشيخ أيمن سويد (المصحف المعلم)</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- مسجل التلاوة الاحترافي (التسجيل والتسميع) -->
+      <div class="sidebar-section" id="guide-recorder">
+        <h3>
+          <i class="fa-solid fa-circle-notch text-danger"></i>
+          <span>مساعد التسميع المباشر</span>
+        </h3>
+
+        <!-- شاشة الموجات الصوتية (Visualizer) -->
+        <div class="visualizer-container">
+          <canvas class="visualizer-canvas" id="visualizer-canvas"></canvas>
+          <div class="rec-timer" id="rec-timer">
+            <i class="fa-solid fa-circle"></i>
+            <span id="timer-label">00:00</span>
+          </div>
+        </div>
+
+        <!-- أزرار التسجيل -->
+        <div class="mic-control-row">
+          <div class="mic-btn-container">
+            <button class="mic-btn" id="btn-mic" title="اضغط لبدء تسجيل تسميعك للآية">
+              <i class="fa-solid fa-microphone"></i>
+            </button>
+            <div class="mic-glow-ring"></div>
+          </div>
+        </div>
+
+        <!-- منظم تضخيم الميكروفون (Gain Control) -->
+        <div class="slider-group">
+          <div class="slider-header">
+            <span>حساسية الميكروفون</span>
+            <span id="gain-value">1.0x</span>
+          </div>
+          <input type="range" class="slider-control" id="gain-slider" min="0.1" max="3.0" step="0.1" value="1.0">
+        </div>
+
+        <!-- هندسة الصوت المباشرة -->
+        <div class="form-group" style="margin-top: 8px;">
+          <label>مؤثرات التسميع:</label>
+          <div class="effects-grid">
+            <div class="effect-chip active" data-effect="normal" title="تسميع بدون مؤثرات">عادي</div>
+            <div class="effect-chip" data-effect="studio" title="تحسين وتصفية الصوت وإزالة الضوضاء">استوديو</div>
+            <div class="effect-chip" data-effect="mosque" title="تأثير صدى المسجد الفخم 🕌">صدى مسجد</div>
+          </div>
+        </div>
+
+        <!-- أزرار تشغيل تلاوتك المسجلة -->
+        <div class="recorder-actions">
+          <button class="btn btn-recorder-play" id="btn-play-recording" disabled>
+            <i class="fa-solid fa-play"></i>
+            <span>استمع لتسجيلك</span>
+          </button>
+          <button class="btn btn-primary" id="btn-verify-recitation" disabled>
+            <i class="fa-solid fa-brain"></i>
+            <span>التحقق الذكي</span>
+          </button>
+        </div>
+        <div id="speech-recognition-status" style="font-size: 11px; text-align: center; color: var(--text-muted);">
+          اضغط على الميكروفون وسمّع الآية بصوتك، ثم اضغط التحقق الذكي للتحليل!
+        </div>
+      </div>
+
+    </aside>
+
+    <!-- 2️⃣ لوحة التلاوة والتسميع الرئيسية (Focus Reading Panel) -->
+    <main class="app-main">
+      
+      <!-- بنر معلومات السورة الحالية -->
+      <div class="surah-banner">
+        <div class="surah-banner-info">
+          <h2 id="current-surah-title">سورة الملك</h2>
+          <div class="surah-banner-meta">
+            <span>
+              <i class="fa-solid fa-circle-info"></i>
+              <span id="ayahs-count-label">٣٠ آية</span>
+            </span>
+            <span>
+              <i class="fa-solid fa-location-dot"></i>
+              <span id="revelation-type-label">مكية</span>
+            </span>
+          </div>
+        </div>
+        <div>
+          <!-- أزرار التحكم بحجم خط الآية -->
+          <div style="display: flex; gap: 8px;">
+            <button class="btn" id="btn-zoom-in" title="تكبير الخط"><i class="fa-solid fa-plus"></i></button>
+            <button class="btn" id="btn-zoom-out" title="تصغير الخط"><i class="fa-solid fa-minus"></i></button>
+          </div>
+        </div>
+      </div>
+
+      <!-- لوحة التلاوة (Focus Panel) -->
+      <div class="reading-display-panel" id="focus-reading-panel">
+        
+        <!-- غطاء التسميع والتحقق الذكي -->
+        <div class="hide-text-overlay" id="hide-text-overlay" style="display: none;">
+          <i class="fa-solid fa-eye-slash"></i>
+          <h3>تم إخفاء الآية الكريمة للتسميع</h3>
+          <p>اضغط أو المس الكلمات للكشف المؤقت عنها إذا نسيت</p>
+        </div>
+
+        <div class="quran-text-container">
+          <!-- نص الآية النشطة -->
+          <div class="active-verse-card" id="active-verse-card">
+            <!-- Dynamically loaded with word spans -->
+          </div>
+        </div>
+      </div>
+
+      <!-- صندوق التفسير الميسّر والترجمة -->
+      <div class="tafsir-drawer" id="tafsir-drawer">
+        <div class="tafsir-drawer-header">
+          <span>التفسير الميسّر والمعاني 💡</span>
+          <button class="btn" id="btn-listen-tafsir" title="الاستماع للتفسير مسموعاً">
+            <i class="fa-solid fa-volume-high"></i>
+          </button>
+        </div>
+        <div class="tafsir-body" id="tafsir-content">
+          يرجى تحديد آية لعرض التفسير الميسّر الخاص بها لمساعدتك في فهم المعنى وتثبيت الحفظ.
+        </div>
+        <div class="tafsir-translation" id="tafsir-translation">
+          English Translation will appear here to support visual memorization.
+        </div>
+      </div>
+
+    </main>
+
+    <!-- 4️⃣ مشغل الصوت السفلي العائم (Sticky Media Player Bar) -->
+    <div class="bottom-player-bar" id="guide-player">
+      
+      <!-- شعار وبطاقة الآية الحالية -->
+      <div class="player-info-card">
+        <span class="player-info-title" id="player-title">سورة الملك</span>
+        <span class="player-info-subtitle" id="player-subtitle">الآية رقم ١</span>
+      </div>
+
+      <!-- أزرار التشغيل -->
+      <div class="player-controls">
+        <!-- تكرار الآية -->
+        <button class="btn-player-circle" id="btn-loop-verse" title="تكرار الآية الحالية بلا نهاية">
+          <i class="fa-solid fa-rotate-left"></i>
+        </button>
+
+        <!-- التلاوة المتتالية -->
+        <button class="btn-player-circle" id="btn-autoplay" title="تفعيل الانتقال التلقائي للآية التالية">
+          <i class="fa-solid fa-forward-step"></i>
+        </button>
+
+        <!-- الآية السابقة -->
+        <button class="btn-player-circle" id="btn-prev-ayah" title="الرجوع للآية السابقة">
+          <i class="fa-solid fa-angle-right"></i>
+        </button>
+
+        <!-- التشغيل / الإيقاف المؤقت -->
+        <button class="btn-player-circle btn-play-pause" id="btn-play-pause" title="تشغيل/إيقاف تلاوة الشيخ (المسطرة Space)">
+          <i class="fa-solid fa-play" id="play-pause-icon"></i>
+        </button>
+
+        <!-- الآية التالية -->
+        <button class="btn-player-circle" id="btn-next-ayah" title="الانتقال للآية التالية">
+          <i class="fa-solid fa-angle-left"></i>
+        </button>
+
+        <!-- زر إخفاء الكلمات للتسميع -->
+        <button class="btn-player-circle" id="btn-hide-text" title="إخفاء كلمات الآية للتسميع غيباً">
+          <i class="fa-solid fa-eye"></i>
+        </button>
+
+        <!-- زر التفسير والمعاني -->
+        <button class="btn-player-circle" id="btn-toggle-tafsir" title="إظهار/إخفاء لوحة التفسير">
+          <i class="fa-solid fa-lightbulb"></i>
+        </button>
+      </div>
+
+      <!-- مؤشر الآيات -->
+      <div class="player-meta-box">
+        <span class="verse-counter-badge" id="player-verse-counter">آية: ١ / ٣٠</span>
+      </div>
+
+    </div>
+
+  </div>
+
+  <!-- صندوق دعم المشروع (Support Modal Pop-up) -->
+  <div class="modal-overlay" id="support-modal">
+    <div class="modal-content" style="max-width: 480px; padding: 30px;">
+      <button class="modal-close-btn" id="btn-close-support"><i class="fa-solid fa-xmark"></i></button>
+      <div class="support-qr-box">
+        <i class="fa-solid fa-heart" style="font-size: 44px; color: var(--accent); animation: bounceSlow 1.5s infinite alternate;"></i>
+        <h2 style="font-size: 22px; font-weight: 700; margin-bottom: 8px;">دعم استمرار وتطوير المشروع</h2>
+        <p style="font-size: 13px; color: var(--text-secondary); line-height: 1.6; margin-bottom: 20px;">
+          مساهمتك تساعدنا على توفير خوادم سريعة، تطوير ميزات الذكاء الاصطناعي صوتياً، وبقاء المنصة مجانية تماماً وخالية من الإعلانات لخدمة كتاب الله.
+        </p>
+        
+        <!-- خيارات التبرع -->
+        <div style="display: flex; flex-direction: column; gap: 16px; width: 100%;">
+          
+          <!-- خيار بايبال -->
+          <a href="https://paypal.me/AEzalden" target="_blank" class="btn btn-primary" style="justify-content: center; padding: 12px; font-size: 14px; text-decoration: none; border-radius: 12px; background: linear-gradient(135deg, #003087, #0079c1); display: flex; align-items: center; color: white;">
+            <i class="fa-brands fa-paypal" style="font-size: 18px; margin-left: 8px;"></i>
+            <span>تبرع عن طريق PayPal</span>
+          </a>
+          
+          <div style="text-align: center; font-size: 12px; color: var(--text-muted); margin: 4px 0;">أو</div>
+          
+          <!-- خيار محفظة الهاتف المحمول -->
+          <div style="background: rgba(255,255,255,0.03); border: 1px dashed var(--border-color); border-radius: 12px; padding: 14px; display: flex; flex-direction: column; gap: 8px; align-items: center; position: relative;">
+            <div style="display: flex; align-items: center; gap: 8px; color: var(--primary); font-weight: 700; font-size: 14px;">
+              <i class="fa-solid fa-mobile-screen-button"></i>
+              <span>الدفع عبر المحفظة الإلكترونية (كاش)</span>
+            </div>
+            
+            <div style="display: flex; align-items: center; justify-content: center; gap: 12px; margin-top: 6px; width: 100%;">
+              <span id="wallet-number" style="font-family: monospace; font-size: 18px; font-weight: 700; color: var(--text-primary); letter-spacing: 0.5px;">+201143888355</span>
+              <button class="btn" id="btn-copy-wallet" style="padding: 4px 10px; font-size: 11px; border-radius: 6px; display: flex; align-items: center; gap: 4px; border-color: var(--primary);" title="نسخ الرقم للمحفظة">
+                <i class="fa-regular fa-copy" id="copy-icon"></i>
+                <span id="copy-text">نسخ</span>
+              </button>
+            </div>
+            <div style="font-size: 11px; color: var(--text-muted); text-align: center; margin-top: 4px;">
+              (فودافون كاش، اتصالات كاش، أورنج كاش، وي كاش، أو أي محفظة بنكية)
+            </div>
+          </div>
+          
+        </div>
+        
+        <div style="font-size: 11px; color: var(--text-muted); margin-top: 20px; border-top: 1px solid var(--border-color); width: 100%; padding-top: 12px;">
+          <strong>أثر دعمك:</strong> المساهمة في استضافة الموقع والملفات الصوتية لآلاف الحفاظ يومياً.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Onboarding Guide Highlights / Elements -->
+  <div class="guide-overlay" id="guide-overlay"></div>
+  <div class="guide-highlight" id="guide-highlight"></div>
+  <div class="guide-tooltip" id="guide-tooltip">
+    <h4 id="guide-tooltip-title">عنوان الدليل</h4>
+    <p id="guide-tooltip-desc">وصف تفصيلي يشرح الميزة وكيفية استخدامها.</p>
+    <div class="guide-actions">
+      <button class="btn btn-primary" id="btn-guide-next">التالي</button>
+      <button class="btn" id="btn-guide-prev" style="padding: 4px 10px;">السابق</button>
+      <button class="btn" id="btn-guide-skip" style="padding: 4px 10px; border-color: var(--danger); color: var(--danger);">تخطي</button>
+    </div>
+  </div>
+
+  <!-- External scripts -->
+  <script src="quran_data.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

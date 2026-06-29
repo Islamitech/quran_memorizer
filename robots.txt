@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://islamitech.github.io/quran_memorizer/sitemap.xml
