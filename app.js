@@ -324,7 +324,14 @@ async function loadSurah(surahNum, startAyahNum = 1) {
     // Scroll active list item into view if in sidebar
     const activeItem = document.getElementById(`surah-item-${surahNum}`);
     if (activeItem) {
-      activeItem.scrollIntoView({ behavior: "smooth", block: "nearest" });
+      const wrapper = document.querySelector(".surah-list-wrapper");
+      if (wrapper) {
+        // Safe manual scrolling to prevent cascading scrolls that collapse the entire sidebar layout
+        wrapper.scrollTo({
+          top: activeItem.offsetTop - wrapper.offsetTop - 20,
+          behavior: "smooth"
+        });
+      }
     }
     
   } catch (error) {
