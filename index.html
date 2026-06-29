@@ -88,12 +88,6 @@
           <span>دليل المميزات</span>
         </button>
 
-        <!-- زر فيديو الدعاية (Interactive Promo Demo) -->
-        <button class="btn" id="btn-promo-demo" title="صناعة فيديو إعلاني تفاعلي للموقع" style="background: rgba(16, 185, 129, 0.15); border-color: var(--primary); color: var(--primary);">
-          <i class="fa-solid fa-video"></i>
-          <span>فيديو الدعاية 🎥</span>
-        </button>
-
         <!-- زر دعم المشروع (Support Project) -->
         <button class="btn" id="btn-support" title="دعم واستمرارية تطوير الموقع">
           <i class="fa-solid fa-heart text-danger"></i>
@@ -211,24 +205,6 @@
         <div id="speech-recognition-status" style="font-size: 11px; text-align: center; color: var(--text-muted);">
           اضغط على الميكروفون وسمّع الآية بصوتك، ثم اضغط التحقق الذكي للتحليل!
         </div>
-      </div>
-
-      <!-- بطاقة شارك الخير ونشر التطبيق -->
-      <div class="sidebar-section share-app-card" style="margin-top: 16px; text-align: center; background: rgba(16, 185, 129, 0.05); border: 1px dashed var(--primary);">
-        <h3 style="color: var(--primary); justify-content: center;">
-          <i class="fa-solid fa-share-nodes"></i>
-          <span>شارك الخير وساهم في النشر 🌸</span>
-        </h3>
-        <p style="font-size: 11.5px; color: var(--text-secondary); margin: 8px 0 12px 0; line-height: 1.5; direction: rtl;">
-          "الدال على الخير كفاعله".. ساهم معنا في نشر التطبيق ليكون صدقة جارية لك ولكل من يرتل كتاب الله.
-        </p>
-        <div style="background: white; padding: 10px; border-radius: var(--radius-sm); display: inline-block; margin-bottom: 12px; border: 1px solid var(--border-color);">
-          <img src="qrcode.png" alt="رمز الاستجابة السريعة لموقع محفظ القران" style="width: 120px; height: 120px; display: block;" />
-        </div>
-        <button class="btn btn-primary" id="btn-share-app" style="width: 100%; gap: 8px;">
-          <i class="fa-solid fa-paper-plane"></i>
-          <span>شارك رابط التطبيق 📲</span>
-        </button>
       </div>
 
     </aside>
@@ -413,37 +389,6 @@
       <button class="btn" id="btn-guide-prev" style="padding: 4px 10px;">السابق</button>
       <button class="btn" id="btn-guide-skip" style="padding: 4px 10px; border-color: var(--danger); color: var(--danger);">تخطي</button>
     </div>
-  </div>
-
-  <!-- Interactive Promo Demo Elements -->
-  <div class="promo-overlay" id="promo-overlay" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.3); z-index: 15000; pointer-events: none; transition: all 0.3s;"></div>
-  <div class="promo-caption" id="promo-caption" style="display: none; position: fixed; bottom: 120px; left: 50%; transform: translateX(-50%); background: rgba(15, 23, 42, 0.95); border: 2px solid var(--primary); padding: 16px 28px; border-radius: 50px; color: white; font-size: 16px; font-weight: bold; z-index: 15001; text-align: center; box-shadow: 0 10px 30px rgba(16, 185, 129, 0.4); direction: rtl; pointer-events: none; animation: bounceSlow 1s infinite alternate;"></div>
-  <div class="promo-cursor" id="promo-cursor" style="display: none; position: absolute; width: 32px; height: 32px; z-index: 15002; pointer-events: none; transition: all 1.2s cubic-bezier(0.19, 1, 0.22, 1); filter: drop-shadow(0 2px 10px rgba(0,0,0,0.5));">
-    <i class="fa-solid fa-arrow-pointer" style="font-size: 28px; color: var(--primary); transform: rotate(-30deg);"></i>
-  </div>
-
-  <!-- Mobile Recording Floating Control Bar -->
-  <div id="mobile-rec-bar" style="display: none; position: fixed; bottom: 85px; left: 16px; right: 16px; background: rgba(220, 38, 38, 0.95); backdrop-filter: blur(8px); padding: 12px 16px; border-radius: var(--radius-md); color: white; align-items: center; justify-content: space-between; z-index: 10000; box-shadow: 0 10px 25px rgba(220, 38, 38, 0.4); direction: rtl; gap: 8px;">
-    <div style="display: flex; align-items: center; gap: 8px; flex-grow: 1;">
-      <span class="recording-blink-dot" style="width: 10px; height: 10px; background: white; border-radius: 50%; display: inline-block; flex-shrink: 0;"></span>
-      <span style="font-weight: bold; font-size: 12px; white-space: nowrap;">جاري تسجيل تلاوتك... 🎙️</span>
-    </div>
-    <div style="display: flex; gap: 8px;">
-      <button id="btn-toggle-rec-verse" style="background: rgba(255, 255, 255, 0.2); border: 1px solid rgba(255, 255, 255, 0.3); padding: 6px 10px; border-radius: var(--radius-sm); color: white; font-weight: bold; font-size: 11px; cursor: pointer; display: flex; align-items: center; gap: 4px;">
-        <i class="fa-solid fa-eye"></i>
-        <span>عرض الآية</span>
-      </button>
-      <button id="btn-stop-mobile-rec" style="background: white; border: none; padding: 6px 12px; border-radius: var(--radius-sm); color: #dc2626; font-weight: bold; font-size: 11px; cursor: pointer; display: flex; align-items: center; gap: 4px;">
-        <i class="fa-solid fa-square"></i>
-        <span>إنهاء</span>
-      </button>
-    </div>
-  </div>
-
-  <!-- Floating Verse helper card during recording -->
-  <div id="mobile-rec-verse-card" style="display: none; position: fixed; bottom: 150px; left: 16px; right: 16px; background: rgba(15, 23, 42, 0.95); border: 2px solid var(--primary); backdrop-filter: blur(8px); padding: 16px; border-radius: var(--radius-md); color: white; z-index: 10000; box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5); direction: rtl; text-align: center;">
-    <div style="font-size: 11px; color: var(--primary); margin-bottom: 8px; font-weight: bold; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 4px;">الآية الكريمة للتسميع 📖</div>
-    <div id="mobile-rec-verse-text" style="font-family: var(--font-quran); font-size: 24px; line-height: 1.8; color: #fef3c7; max-height: 150px; overflow-y: auto;">الآية تظهر هنا...</div>
   </div>
 
   <!-- External scripts -->

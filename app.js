@@ -705,17 +705,6 @@ async function startAudioRecording() {
       state.speechRecognition.start();
     }
     
-    // Auto-hide sidebar drawer on mobile to allow distraction-free reading of verses during recording
-    const sidebar = document.querySelector(".app-sidebar");
-    const isMobile = window.innerWidth <= 768;
-    if (isMobile) {
-      sidebar.classList.remove("open");
-      const mobileRecBar = document.getElementById("mobile-rec-bar");
-      if (mobileRecBar) {
-        mobileRecBar.style.display = "flex";
-      }
-    }
-    
   } catch (err) {
     console.error("Recording error:", err);
     alert("تعذر الوصول للميكروفون. يرجى إعطاء الصلاحية للموقع لتسجيل التسميع.");
@@ -740,26 +729,6 @@ function stopAudioRecording() {
   // Stop Speech Recognition
   if (state.speechRecognition) {
     state.speechRecognition.stop();
-  }
-
-  // Hide mobile recording floating bar and slide open the sidebar on mobile to view controls/results
-  const mobileRecBar = document.getElementById("mobile-rec-bar");
-  if (mobileRecBar) {
-    mobileRecBar.style.display = "none";
-  }
-  const recVerseCard = document.getElementById("mobile-rec-verse-card");
-  if (recVerseCard) {
-    recVerseCard.style.display = "none";
-  }
-  const toggleRecVerseBtn = document.getElementById("btn-toggle-rec-verse");
-  if (toggleRecVerseBtn) {
-    toggleRecVerseBtn.querySelector("span").textContent = "عرض الآية";
-    toggleRecVerseBtn.querySelector("i").className = "fa-solid fa-eye";
-  }
-  const isMobile = window.innerWidth <= 768;
-  if (isMobile) {
-    const sidebar = document.querySelector(".app-sidebar");
-    sidebar.classList.add("open");
   }
 }
 
@@ -1246,49 +1215,6 @@ function setupEventListeners() {
   
   document.getElementById("btn-play-recording").addEventListener("click", playRecordedAudioWithEffects);
   document.getElementById("btn-verify-recitation").addEventListener("click", verifyUserRecitation);
-  document.getElementById("btn-promo-demo").addEventListener("click", startInteractivePromoDemo);
-  const stopMobileRecBtn = document.getElementById("btn-stop-mobile-rec");
-  if (stopMobileRecBtn) {
-    stopMobileRecBtn.addEventListener("click", () => {
-      stopAudioRecording();
-    });
-  }
-  const toggleRecVerseBtn = document.getElementById("btn-toggle-rec-verse");
-  if (toggleRecVerseBtn) {
-    toggleRecVerseBtn.addEventListener("click", () => {
-      const recVerseCard = document.getElementById("mobile-rec-verse-card");
-      if (recVerseCard.style.display === "none") {
-        const activeText = document.querySelector("#active-verse-card .verse-arabic-text")?.textContent || 
-                           state.activeVerseWords.map(w => w.word).join(" ");
-        document.getElementById("mobile-rec-verse-text").textContent = activeText;
-        recVerseCard.style.display = "block";
-        toggleRecVerseBtn.querySelector("span").textContent = "إخفاء الآية";
-        toggleRecVerseBtn.querySelector("i").className = "fa-solid fa-eye-slash";
-      } else {
-        recVerseCard.style.display = "none";
-        toggleRecVerseBtn.querySelector("span").textContent = "عرض الآية";
-        toggleRecVerseBtn.querySelector("i").className = "fa-solid fa-eye";
-      }
-    });
-  }
-  document.getElementById("btn-share-app").addEventListener("click", () => {
-    const shareData = {
-      title: "محفّظ القرآن الكريم 🤲",
-      text: "🌸 صدقة جارية 🌸\nيسعدني مشاركتكم تطبيق \"محفّظ القرآن الكريم\" - منصة تفاعلية مذهلة لتسهيل حفظ ومراجعة القرآن صوتياً مع ميزات رائعة مثل صدى المسجد والتحقق الذكي!\nجربه الآن وشاركه مع أحبابك:",
-      url: "https://islamitech.github.io/quran_memorizer/"
-    };
-    
-    if (navigator.share) {
-      navigator.share(shareData)
-        .then(() => console.log("Shared successfully"))
-        .catch((err) => console.log("Error sharing:", err));
-    } else {
-      // Fallback copy to clipboard
-      const copyText = `${shareData.text}\n${shareData.url}`;
-      navigator.clipboard.writeText(copyText)
-        .then(() => alert("📋 تم نسخ الرابط والنص الدعائي بنجاح! شاركه الآن مع أحبابك."));
-    }
-  });
   
   // Playback of Tafsir msmou'a (Text-to-speech simulation)
   document.getElementById("btn-listen-tafsir").addEventListener("click", () => {
@@ -1339,16 +1265,7 @@ function setupEventListeners() {
   document.addEventListener("click", (e) => {
     const sidebar = document.querySelector(".app-sidebar");
     const toggleBtn = document.getElementById("btn-toggle-sidebar");
-    const guideTooltip = document.getElementById("guide-tooltip");
-    const guideOverlay = document.getElementById("guide-overlay");
-    
-    if (
-      sidebar.classList.contains("open") && 
-      !sidebar.contains(e.target) && 
-      !toggleBtn.contains(e.target) &&
-      (!guideTooltip || !guideTooltip.contains(e.target)) &&
-      e.target !== guideOverlay
-    ) {
+    if (sidebar.classList.contains("open") && !sidebar.contains(e.target) && !toggleBtn.contains(e.target)) {
       sidebar.classList.remove("open");
     }
   });
@@ -1386,73 +1303,48 @@ function startOnboardingTour() {
 
 function renderGuideStep() {
   const step = GUIDE_STEPS[state.currentGuideStep];
-  const sidebar = document.querySelector(".app-sidebar");
-  const isMobile = window.innerWidth <= 768;
+  const highlightEl = document.getElementById("guide-highlight");
+  const tooltipEl = document.getElementById("guide-tooltip");
+  const targetEl = document.getElementById(step.elementId);
   
-  let openedSidebar = false;
-  let closedSidebar = false;
-  
-  if (isMobile) {
-    const isSidebarElement = ["guide-surah-select", "guide-reciter-select", "guide-recorder"].includes(step.elementId);
-    if (isSidebarElement) {
-      if (!sidebar.classList.contains("open")) {
-        sidebar.classList.add("open");
-        openedSidebar = true;
-      }
-    } else {
-      if (sidebar.classList.contains("open")) {
-        sidebar.classList.remove("open");
-        closedSidebar = true;
-      }
-    }
+  if (!targetEl) {
+    // If element doesn't exist, skip to next
+    nextGuideStep();
+    return;
   }
   
-  // Defer calculations if we toggled the sidebar to wait for smooth CSS transitions
-  const delay = (openedSidebar || closedSidebar) ? 450 : 0;
+  // Highlight target element box calculation
+  const rect = targetEl.getBoundingClientRect();
+  const pad = 6;
   
-  setTimeout(() => {
-    const highlightEl = document.getElementById("guide-highlight");
-    const tooltipEl = document.getElementById("guide-tooltip");
-    const targetEl = document.getElementById(step.elementId);
-    
-    if (!targetEl) {
-      nextGuideStep();
-      return;
-    }
-    
-    // Highlight target element box calculation
-    const rect = targetEl.getBoundingClientRect();
-    const pad = 6;
-    
-    highlightEl.style.width = `${rect.width + pad * 2}px`;
-    highlightEl.style.height = `${rect.height + pad * 2}px`;
-    highlightEl.style.top = `${rect.top - pad + window.scrollY}px`;
-    highlightEl.style.left = `${rect.left - pad + window.scrollX}px`;
-    highlightEl.style.display = "block";
-    
-    // Tooltip content & positions calculations
-    document.getElementById("guide-tooltip-title").textContent = step.title;
-    document.getElementById("guide-tooltip-desc").textContent = step.desc;
-    
-    tooltipEl.style.display = "block";
-    
-    // Compute best tooltip layout positions
-    const tooltipRect = tooltipEl.getBoundingClientRect();
-    let toolTop = rect.bottom + 12 + window.scrollY;
-    let toolLeft = rect.left + (rect.width / 2) - (tooltipRect.width / 2) + window.scrollX;
-    
-    // Constrain limits
-    if (toolLeft < 10) toolLeft = 10;
-    if (toolLeft + tooltipRect.width > window.innerWidth - 10) {
-      toolLeft = window.innerWidth - tooltipRect.width - 10;
-    }
-    if (toolTop + tooltipRect.height > window.innerHeight) {
-      toolTop = rect.top - tooltipRect.height - 12 + window.scrollY;
-    }
-    
-    tooltipEl.style.top = `${toolTop}px`;
-    tooltipEl.style.left = `${toolLeft}px`;
-  }, delay);
+  highlightEl.style.width = `${rect.width + pad * 2}px`;
+  highlightEl.style.height = `${rect.height + pad * 2}px`;
+  highlightEl.style.top = `${rect.top - pad + window.scrollY}px`;
+  highlightEl.style.left = `${rect.left - pad + window.scrollX}px`;
+  highlightEl.style.display = "block";
+  
+  // Tooltip content & positions calculations
+  document.getElementById("guide-tooltip-title").textContent = step.title;
+  document.getElementById("guide-tooltip-desc").textContent = step.desc;
+  
+  tooltipEl.style.display = "block";
+  
+  // Compute best tooltip layout positions
+  const tooltipRect = tooltipEl.getBoundingClientRect();
+  let toolTop = rect.bottom + 12 + window.scrollY;
+  let toolLeft = rect.left + (rect.width / 2) - (tooltipRect.width / 2) + window.scrollX;
+  
+  // Constrain limits
+  if (toolLeft < 10) toolLeft = 10;
+  if (toolLeft + tooltipRect.width > window.innerWidth - 10) {
+    toolLeft = window.innerWidth - tooltipRect.width - 10;
+  }
+  if (toolTop + tooltipRect.height > window.innerHeight) {
+    toolTop = rect.top - tooltipRect.height - 12 + window.scrollY;
+  }
+  
+  tooltipEl.style.top = `${toolTop}px`;
+  tooltipEl.style.left = `${toolLeft}px`;
   
   // Set button contents
   const nextBtn = document.getElementById("btn-guide-next");
@@ -1615,129 +1507,4 @@ function updateMediaSession(title, artist) {
       navigateAyah(1);
     });
   }
-}
-
-// --- Interactive Promo Video Demonstration Simulator ---
-function startInteractivePromoDemo() {
-  // Stop all active playbacks first
-  stopReciterAudio();
-  if (state.reciterAudio) state.reciterAudio.pause();
-  
-  // Show Promo UI Elements
-  const overlay = document.getElementById("promo-overlay");
-  const caption = document.getElementById("promo-caption");
-  const cursor = document.getElementById("promo-cursor");
-  
-  overlay.style.display = "block";
-  caption.style.display = "block";
-  cursor.style.display = "block";
-  
-  // Disable user input interaction pointer-events for normal elements to prevent clicking during simulation
-  document.body.style.pointerEvents = "none";
-  // Allow clicking on body inside overlay or specific elements
-  overlay.style.pointerEvents = "auto";
-  
-  function updateCaption(text) {
-    caption.textContent = text;
-  }
-  
-  function moveCursor(targetId, callback) {
-    const el = document.getElementById(targetId) || document.querySelector(targetId);
-    if (!el) {
-      if (callback) callback();
-      return;
-    }
-    const rect = el.getBoundingClientRect();
-    cursor.style.top = `${rect.top + window.scrollY + rect.height/2 - 10}px`;
-    cursor.style.left = `${rect.left + window.scrollX + rect.width/2 - 5}px`;
-    
-    setTimeout(() => {
-      // Simulate "click" visual ripple
-      el.style.transform = "scale(0.95)";
-      setTimeout(() => {
-        el.style.transform = "";
-        if (callback) callback(el);
-      }, 150);
-    }, 1200);
-  }
-  
-  // --- Start Simulation Timeline ---
-  
-  // Step 1: Start Recitation Playback
-  updateCaption("1️⃣ تشغيل تلاوة القارئ لتثبيت النطق الصحيح وتتبع الكلمات متزامنة... 📖🎧");
-  moveCursor("btn-play-pause", (playBtn) => {
-    // Start playback
-    playReciterAudio();
-    
-    // Wait 6 seconds for recitation karaoke display
-    setTimeout(() => {
-      // Step 2: Pause Recitation and prepare to record
-      updateCaption("2️⃣ إيقاف التلاوة المؤقت والذهاب لتسجيل التسميع الذاتي بصوت المستخدم... 🎙️");
-      moveCursor("btn-play-pause", (pauseBtn) => {
-        pauseReciterAudio();
-        
-        // Move to Microphone button
-        setTimeout(() => {
-          updateCaption("3️⃣ يضغط المستخدم على الميكروفون ويبدأ بالتسميع، وتظهر ذبذبات تفاعلية حية... 🔴⚡");
-          moveCursor("btn-mic", (micBtn) => {
-            // Simulate mic recording UI (without demanding raw permission)
-            micBtn.classList.add("recording");
-            const visualizer = document.getElementById("visualizer");
-            const timerLabel = document.getElementById("timer-label");
-            
-            // Animate recording timer
-            let seconds = 0;
-            const timerInterval = setInterval(() => {
-              seconds++;
-              timerLabel.textContent = `00:0${seconds}`;
-            }, 1000);
-            
-            // Let it simulate recording for 5 seconds
-            setTimeout(() => {
-              clearInterval(timerInterval);
-              micBtn.classList.remove("recording");
-              timerLabel.textContent = "00:00";
-              
-              // Enable play recording button
-              const playRecBtn = document.getElementById("btn-play-recording");
-              playRecBtn.disabled = false;
-              
-              // Step 3: Choose Mosque Echo Effect
-              updateCaption("4️⃣ اختيار مؤثر \"صدى مسجد\" الفخم لإضافة هندسة صوتية مذهلة للتلاوة... 🕌🔊");
-              const echoChip = document.querySelector('[data-effect="echo"]');
-              moveCursor('[data-effect="echo"]', (chip) => {
-                document.querySelectorAll(".effect-chip").forEach(c => c.classList.remove("active"));
-                chip.classList.add("active");
-                state.audioEffect = "echo";
-                
-                // Step 4: Play self recitation with echo
-                setTimeout(() => {
-                  updateCaption("5️⃣ الاستماع للتسميع الذاتي بصوتك نقيًا ومضافًا إليه صدى المسجد الرائع! 🎧🌟");
-                  moveCursor("btn-play-recording", (playRec) => {
-                    // Highlight playback
-                    playRec.classList.add("active");
-                    
-                    // Animate visualizer placeholder or progress
-                    setTimeout(() => {
-                      playRec.classList.remove("active");
-                      
-                      // End of Demo Walkthrough
-                      updateCaption("🎉 اكتمل العرض بنجاح! يمكنك تصوير شاشتك الآن لصنع فيديو الدعاية الخاص بك بكل سهولة.");
-                      setTimeout(() => {
-                        // Cleanup
-                        overlay.style.display = "none";
-                        caption.style.display = "none";
-                        cursor.style.display = "none";
-                        document.body.style.pointerEvents = "auto";
-                      }, 4000);
-                    }, 6000);
-                  });
-                }, 1500);
-              });
-            }, 5000);
-          });
-        }, 1000);
-      });
-    }, 6000);
-  });
 }
