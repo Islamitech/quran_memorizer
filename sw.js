@@ -1,4 +1,5 @@
-const CACHE_NAME = 'quran-memorizer-cache-v8';
+const CACHE_VERSION = 'v9';
+const CACHE_NAME = `quran-memorizer-cache-${CACHE_VERSION}`;
 const ASSETS_TO_CACHE = [
   './',
   './index.html',
@@ -9,13 +10,24 @@ const ASSETS_TO_CACHE = [
   'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css'
 ];
 
-// Install event - Cache static assets
+// Install event - Cache static assets completely bypassing HTTP cache
 self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME)
-      .then((cache) => {
-        console.log('[Service Worker] Caching App Shell...');
-        return cache.addAll(ASSETS_TO_CACHE);
+      .then(async (cache) => {
+        console.log('[Service Worker] Caching App Shell bypassing HTTP cache...');
+        // Fetch each asset with cache: 'reload' to ensure we get the absolute latest from the server
+        for (const asset of ASSETS_TO_CACHE) {
+          try {
+            const req = new Request(asset, { cache: 'reload' });
+            const response = await fetch(req);
+            if (response && response.ok) {
+              await cache.put(asset, response);
+            }
+          } catch (e) {
+            console.error('[Service Worker] Failed to cache:', asset, e);
+          }
+        }
       })
       .then(() => self.skipWaiting())
   );
@@ -40,7 +52,6 @@ self.addEventListener('activate', (event) => {
 // Fetch event - Cache first with network fallback
 self.addEventListener('fetch', (event) => {
   // Only handle local requests and known CDNs
-  const requestUrl = new URL(event.request.url);
   if (!event.request.url.startsWith(self.location.origin) && 
       !event.request.url.includes('cdnjs.cloudflare.com') && 
       !event.request.url.includes('api.alquran.cloud') &&
@@ -49,7 +60,7 @@ self.addEventListener('fetch', (event) => {
   }
 
   event.respondWith(
-    caches.match(event.request).then((cachedResponse) => {
+    caches.match(event.request, { ignoreSearch: true }).then((cachedResponse) => {
       if (cachedResponse) {
         return cachedResponse;
       }
@@ -66,7 +77,7 @@ self.addEventListener('fetch', (event) => {
       }).catch(() => {
         // Offline Fallback for Navigation
         if (event.request.mode === 'navigate') {
-          return caches.match('./index.html');
+          return caches.match('./index.html', { ignoreSearch: true });
         }
         return null;
       });
