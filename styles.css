@@ -1130,6 +1130,24 @@ body {
     padding: 0;
     z-index: 10;
   }
+  .progress-tracker::before {
+    content: attr(data-label);
+    position: absolute;
+    bottom: 4px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 10px;
+    font-weight: 700;
+    color: var(--primary);
+    background: var(--bg-sidebar);
+    padding: 1px 8px;
+    border-radius: 6px 6px 0 0;
+    border: 1px solid var(--border-color);
+    border-bottom: none;
+    z-index: 15;
+    white-space: nowrap;
+    box-shadow: 0 -2px 4px rgba(0,0,0,0.15);
+  }
   .progress-tracker .progress-header,
   .progress-tracker .progress-motivation {
     display: none !important;

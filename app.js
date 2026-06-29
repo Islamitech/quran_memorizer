@@ -154,6 +154,7 @@ function updateProgressBar() {
   // DOM updates
   document.getElementById("progress-surah-label").textContent = `سورة ${currentSurah.name} (آيات مسمّعة: ${memorizedCount} من ${totalAyahs})`;
   document.getElementById("progress-percentage-label").textContent = `${percentage}%`;
+  document.getElementById("guide-progress").setAttribute("data-label", `مؤشر الحفظ: ${percentage}%`);
   document.getElementById("progress-fill").style.width = `${percentage}%`;
   document.getElementById("player-verse-counter").textContent = `آية: ${state.currentAyahNum} / ${totalAyahs}`;
   
