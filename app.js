@@ -287,30 +287,24 @@ async function loadSurah(surahNum, startAyahNum = 1) {
   
   try {
     // 1. Try fetching from online API with fallback to local
-    let data;
-    if (OFFLINE_QURAN_DATA[surahNum]) {
-      // Use offline data for quick demonstrations
-      data = OFFLINE_QURAN_DATA[surahNum];
-    } else {
-      // Fetch dynamic Quran texts: Text (Uthmani), Tafsir (Al-Muyassar), English Translation
-      const response = await fetch(`https://api.alquran.cloud/v1/surah/${surahNum}/editions/quran-uthmani,ar.muyassar,en.sahih`);
-      if (!response.ok) throw new Error("Network issues");
-      const json = await response.json();
-      
-      const uthmaniList = json.data[0].ayahs;
-      const muyassarList = json.data[1].ayahs;
-      const translationList = json.data[2].ayahs;
-      
-      data = {
-        name: json.data[0].name,
-        ayahs: uthmaniList.map((ayah, i) => ({
-          number: i + 1,
-          text: ayah.text,
-          translation: translationList[i].text,
-          tafsir: muyassarList[i].text
-        }))
-      };
-    }
+    // Fetch dynamic Quran texts: Text (Uthmani), Tafsir (Al-Muyassar), English Translation
+    const response = await fetch(`https://api.alquran.cloud/v1/surah/${surahNum}/editions/quran-uthmani,ar.muyassar,en.sahih`);
+    if (!response.ok) throw new Error("Network issues");
+    const json = await response.json();
+    
+    const uthmaniList = json.data[0].ayahs;
+    const muyassarList = json.data[1].ayahs;
+    const translationList = json.data[2].ayahs;
+    
+    const data = {
+      name: json.data[0].name,
+      ayahs: uthmaniList.map((ayah, i) => ({
+        number: i + 1,
+        text: ayah.text,
+        translation: translationList[i].text,
+        tafsir: muyassarList[i].text
+      }))
+    };
     
     state.surahData = data;
     
@@ -499,6 +493,12 @@ function getGlobalAyahNumber(surahNum, ayahNum) {
 
 function playReciterAudio() {
   if (!state.surahData) return;
+  
+  // Stop recording if active to prevent overlapping audio/distraction
+  const micBtn = document.getElementById("btn-mic");
+  if (micBtn && micBtn.classList.contains("recording")) {
+    stopAudioRecording();
+  }
   
   let audioUrl;
   if (state.currentReciter === "everyayah.faresabbad") {
@@ -1203,6 +1203,9 @@ function setupEventListeners() {
     if (micBtn.classList.contains("recording")) {
       stopAudioRecording();
     } else {
+      if (state.isReciterAudioPlaying) {
+        pauseReciterAudio();
+      }
       startAudioRecording();
     }
   });

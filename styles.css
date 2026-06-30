@@ -628,7 +628,8 @@ body {
   min-height: 320px;
   padding: 40px;
   position: relative;
-  overflow: hidden;
+  overflow-y: auto;
+  overflow-x: hidden;
   box-shadow: var(--shadow-md);
   backdrop-filter: var(--glass-blur);
   transition: all 0.3s ease;
