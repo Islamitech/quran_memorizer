@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'v16';
+const CACHE_VERSION = 'v17';
 const CACHE_NAME = `quran-memorizer-cache-${CACHE_VERSION}`;
 const ASSETS_TO_CACHE = [
   './',
@@ -55,6 +55,8 @@ self.addEventListener('fetch', (event) => {
   if (!event.request.url.startsWith(self.location.origin) && 
       !event.request.url.includes('cdnjs.cloudflare.com') && 
       !event.request.url.includes('api.alquran.cloud') &&
+      !event.request.url.includes('everyayah.com') &&
+      !event.request.url.includes('cdn.islamic.network') &&
       !event.request.url.includes('cdn-icons-png.flaticon.com')) {
     return; // Bypass handling for third-party scripts/extensions
   }
@@ -66,8 +68,12 @@ self.addEventListener('fetch', (event) => {
       }
       
       return fetch(event.request).then((networkResponse) => {
-        // Cache external API text calls (like Quran texts and Tafsir)
-        if (event.request.url.includes('api.alquran.cloud') && networkResponse.status === 200) {
+        // Cache external API text calls and audio files dynamically
+        const isApiOrAudio = event.request.url.includes('api.alquran.cloud') || 
+                             event.request.url.includes('everyayah.com') || 
+                             event.request.url.includes('cdn.islamic.network');
+                             
+        if (isApiOrAudio && (networkResponse.status === 200 || networkResponse.type === 'opaque')) {
           const cacheCopy = networkResponse.clone();
           caches.open(CACHE_NAME).then((cache) => {
             cache.put(event.request, cacheCopy);
