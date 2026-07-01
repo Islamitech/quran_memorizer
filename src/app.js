@@ -198,6 +198,7 @@ const initApp = async () => {
     } else {
       ui.iconPlay.style.display = 'block';
       ui.iconPause.style.display = 'none';
+      ui.audio.pause();
     }
   });
 
