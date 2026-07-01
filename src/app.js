@@ -41,7 +41,6 @@ const initApp = async () => {
     playBtn: document.getElementById('btn-play-pause'),
     btnRepeat: document.getElementById('btn-repeat'),
     btnPlayRecording: document.getElementById('btn-play-recording'),
-    btnVerifyRecitation: document.getElementById('btn-verify-recitation'),
     iconPlay: document.querySelector('.icon-play'),
     iconPause: document.querySelector('.icon-pause'),
     nextBtn: document.getElementById('btn-next'),
@@ -163,8 +162,6 @@ const initApp = async () => {
     // Reset recording buttons
     ui.btnPlayRecording.disabled = true;
     ui.btnPlayRecording.style.opacity = '0.5';
-    ui.btnVerifyRecitation.disabled = true;
-    ui.btnVerifyRecitation.style.opacity = '0.5';
     AppState.speech.detectedText = '';
     currentRecordedBlob = null;
     ui.speechResult.classList.remove('show');
@@ -376,8 +373,6 @@ const initApp = async () => {
       if (AppState.player.isPlaying) AppState.player.isPlaying = false; // Stop reciter audio
       ui.btnPlayRecording.disabled = true;
       ui.btnPlayRecording.style.opacity = '0.5';
-      ui.btnVerifyRecitation.disabled = true;
-      ui.btnVerifyRecitation.style.opacity = '0.5';
       ui.speechResult.textContent = 'جاري تسجيل تلاوتك الآن...';
       ui.speechResult.classList.add('show');
       ui.btnSendTeacher.style.display = 'none';
@@ -386,7 +381,6 @@ const initApp = async () => {
   });
 
   window.addEventListener('speechresult', (e) => {
-    // Just keep detected text in state, do not show real-time scores
     const { text } = e.detail;
     AppState.speech.detectedText = text;
   });
@@ -395,13 +389,14 @@ const initApp = async () => {
     currentRecordedBlob = e.detail;
     ui.btnPlayRecording.disabled = false;
     ui.btnPlayRecording.style.opacity = '1';
-    ui.btnVerifyRecitation.disabled = false;
-    ui.btnVerifyRecitation.style.opacity = '1';
-    ui.speechResult.textContent = 'تم تسجيل تلاوتك بنجاح. اضغط "التحقق الذكي" للتحليل أو استمع لتسجيلك.';
+    ui.speechResult.textContent = 'تم تسجيل تلاوتك بنجاح! يمكنك الآن الاستماع لتسجيلك بصدى المسجد أو إرساله لمعلمك.';
     ui.speechResult.classList.add('show');
+    ui.btnSendTeacher.style.display = 'inline-flex';
   });
 
-  let currentPlayingRecording = null;
+  let currentPlayingSource = null;
+  let currentPlayingCtx = null;
+
   ui.btnPlayRecording.addEventListener('click', () => {
     if (!currentRecordedBlob) return;
     
@@ -411,106 +406,81 @@ const initApp = async () => {
       AppState.player.isPlaying = false;
     }
 
-    if (currentPlayingRecording) {
-      currentPlayingRecording.pause();
-      currentPlayingRecording = null;
+    if (currentPlayingSource) {
+      currentPlayingSource.stop();
+      currentPlayingSource = null;
+      if (currentPlayingCtx) {
+        currentPlayingCtx.close();
+        currentPlayingCtx = null;
+      }
       ui.btnPlayRecording.style.color = '';
       return;
     }
 
-    const url = URL.createObjectURL(currentRecordedBlob);
-    currentPlayingRecording = new Audio(url);
-    ui.btnPlayRecording.style.color = 'var(--accent-primary)';
+    const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+    currentPlayingCtx = new AudioContextClass();
     
-    currentPlayingRecording.play().catch(err => {
-      console.error("Playback failed", err);
-    });
-
-    currentPlayingRecording.onended = () => {
-      ui.btnPlayRecording.style.color = '';
-      currentPlayingRecording = null;
+    const reader = new FileReader();
+    reader.onload = async function() {
+      try {
+        if (!currentPlayingCtx) return;
+        const buffer = await currentPlayingCtx.decodeAudioData(reader.result);
+        currentPlayingSource = currentPlayingCtx.createBufferSource();
+        currentPlayingSource.buffer = buffer;
+        
+        // Reverb mosque echo effect (Dual delay lines simulation)
+        const dryNode = currentPlayingCtx.createGain();
+        const wetNode = currentPlayingCtx.createGain();
+        
+        const delay1 = currentPlayingCtx.createDelay(1.0);
+        const delay2 = currentPlayingCtx.createDelay(1.0);
+        const feedback1 = currentPlayingCtx.createGain();
+        const feedback2 = currentPlayingCtx.createGain();
+        
+        delay1.delayTime.value = 0.18;
+        delay2.delayTime.value = 0.28;
+        
+        feedback1.gain.value = 0.18; 
+        feedback2.gain.value = 0.15;
+        
+        dryNode.gain.value = 1.0;
+        wetNode.gain.value = 0.18; 
+        
+        delay1.connect(feedback1);
+        feedback1.connect(delay1);
+        
+        delay2.connect(feedback2);
+        feedback2.connect(delay2);
+        
+        currentPlayingSource.connect(dryNode);
+        dryNode.connect(currentPlayingCtx.destination);
+        
+        currentPlayingSource.connect(delay1);
+        currentPlayingSource.connect(delay2);
+        
+        delay1.connect(wetNode);
+        delay2.connect(wetNode);
+        wetNode.connect(currentPlayingCtx.destination);
+        
+        currentPlayingSource.start(0);
+        ui.btnPlayRecording.style.color = 'var(--accent-primary)';
+        
+        currentPlayingSource.onended = () => {
+          ui.btnPlayRecording.style.color = '';
+          currentPlayingSource = null;
+          if (currentPlayingCtx) {
+            currentPlayingCtx.close();
+            currentPlayingCtx = null;
+          }
+        };
+      } catch (e) {
+        console.error("Decoding audio failed", e);
+      }
     };
-  });
-
-  ui.btnVerifyRecitation.addEventListener('click', () => {
-    const currentAyahText = AppState.current.ayah.text || '';
-    const text = AppState.speech.detectedText;
-
-    if (!text) {
-      // Simulation Fallback
-      ui.speechResult.textContent = "جاري محاكاة التحليل الصوتي للآية...";
-      ui.speechResult.style.color = '';
-      ui.speechResult.classList.add('show');
-      
-      setTimeout(() => {
-        const simScore = 0.92;
-        AppState.speech.detectedText = currentAyahText;
-        AppState.speech.latestScore = simScore;
-        
-        ui.speechResult.textContent = `النتيجة (محاكاة): ${currentAyahText} | التطابق: 92%`;
-        ui.speechResult.style.color = 'var(--accent-success)';
-        ui.btnSendTeacher.style.display = 'inline-flex';
-        
-        // Update Mastered Progress
-        const surahId = AppState.current.surah.id;
-        const ayahId = AppState.current.ayah.id;
-        if (!AppState.memorization.mastered[surahId]) {
-          AppState.memorization.mastered[surahId] = [];
-        }
-        if (!AppState.memorization.mastered[surahId].includes(ayahId)) {
-          AppState.memorization.mastered[surahId].push(ayahId);
-          const totalAyahs = AppState.current.surah.ayahCount;
-          const masteredCount = AppState.memorization.mastered[surahId].length;
-          AppState.memorization.progress = Math.round((masteredCount / totalAyahs) * 100);
-        }
-        
-        setTimeout(() => {
-          ui.speechResult.style.color = '';
-          ui.speechResult.textContent = 'أحسنت! آية صحيحة (محاكاة).';
-          setTimeout(() => ui.speechResult.classList.remove('show'), 3000);
-        }, 1500);
-      }, 1500);
-      return;
-    }
-
-    const matchAlgo = speechEngine.matchAlgo;
-    const matchScore = matchAlgo.calculateMatchScore(text, currentAyahText);
-    AppState.speech.latestScore = matchScore;
-
-    ui.speechResult.textContent = `النتيجة: ${text} | التطابق: ${Math.round(matchScore*100)}%`;
-    ui.speechResult.classList.add('show');
-
-    if (matchScore >= 0.8) {
-      ui.speechResult.style.color = 'var(--accent-success)';
-      ui.btnSendTeacher.style.display = 'inline-flex';
-      
-      // Update Mastered Progress
-      const surahId = AppState.current.surah.id;
-      const ayahId = AppState.current.ayah.id;
-      if (!AppState.memorization.mastered[surahId]) {
-        AppState.memorization.mastered[surahId] = [];
-      }
-      if (!AppState.memorization.mastered[surahId].includes(ayahId)) {
-        AppState.memorization.mastered[surahId].push(ayahId);
-        const totalAyahs = AppState.current.surah.ayahCount;
-        const masteredCount = AppState.memorization.mastered[surahId].length;
-        AppState.memorization.progress = Math.round((masteredCount / totalAyahs) * 100);
-      }
-
-      setTimeout(() => {
-        ui.speechResult.style.color = '';
-        ui.speechResult.textContent = 'أحسنت! آية صحيحة.';
-        setTimeout(() => ui.speechResult.classList.remove('show'), 3000);
-      }, 1500);
-    } else {
-      ui.speechResult.style.color = 'var(--accent-primary)';
-      ui.btnSendTeacher.style.display = 'inline-flex';
-      ui.speechResult.textContent = `التلاوة غير مطابقة للآية بشكل كافٍ (${Math.round(matchScore * 100)}%). حاول مجدداً أو أرسل لمعلمك.`;
-    }
+    reader.readAsArrayBuffer(currentRecordedBlob);
   });
 
   window.addEventListener('speechend', (e) => {
-    // Handle UI elements status on speech end
     if (AppState.speech.isListening) {
       AppState.speech.isListening = false;
     }
