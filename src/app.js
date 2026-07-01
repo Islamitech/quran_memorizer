@@ -81,7 +81,8 @@ const initApp = async () => {
     listeningRepeatContainer: document.getElementById('listening-repeat-surah-select-container'),
     listeningRepeatSelect: document.getElementById('listening-repeat-surah-select'),
     listeningSurahsList: document.getElementById('listening-surahs-list'),
-    btnStartListeningMode: document.getElementById('btn-start-listening-mode')
+    btnStartListeningMode: document.getElementById('btn-start-listening-mode'),
+    chkLiveEcho: document.getElementById('chk-live-echo')
   };
 
   karaokeEngine.init(ui.audio, ui.quranDisplay);
@@ -89,6 +90,12 @@ const initApp = async () => {
   let listeningPlaylist = [];
   let currentPlaylistIndex = 0;
   let repeatSurahId = null;
+  let currentPlayingRecording = null;
+
+  // Initialize live echo state from UI checkbox
+  if (ui.chkLiveEcho) {
+    AppState.speech.liveEchoEnabled = ui.chkLiveEcho.checked;
+  }
 
   const surahsData = [
     {id:1,name:'الفاتحة'},{id:2,name:'البقرة'},{id:3,name:'آل عمران'},{id:4,name:'النساء'},{id:5,name:'المائدة'},{id:6,name:'الأنعام'},{id:7,name:'الأعراف'},{id:8,name:'الأنفال'},{id:9,name:'التوبة'},{id:10,name:'يونس'},{id:11,name:'هود'},{id:12,name:'يوسف'},{id:13,name:'الرعد'},{id:14,name:'إبراهيم'},{id:15,name:'الحجر'},{id:16,name:'النحل'},{id:17,name:'الإسراء'},{id:18,name:'الكهف'},{id:19,name:'مريم'},{id:20,name:'طه'},{id:21,name:'الأنبياء'},{id:22,name:'الحج'},{id:23,name:'المؤمنون'},{id:24,name:'النور'},{id:25,name:'الفرقان'},{id:26,name:'الشعراء'},{id:27,name:'النمل'},{id:28,name:'القصص'},{id:29,name:'العنكبوت'},{id:30,name:'الروم'},{id:31,name:'لقمان'},{id:32,name:'السجدة'},{id:33,name:'الأحزاب'},{id:34,name:'سبأ'},{id:35,name:'فاطر'},{id:36,name:'يس'},{id:37,name:'الصافات'},{id:38,name:'ص'},{id:39,name:'الزمر'},{id:40,name:'غافر'},{id:41,name:'فصلت'},{id:42,name:'الشورى'},{id:43,name:'الزخرف'},{id:44,name:'الدخان'},{id:45,name:'الجاثية'},{id:46,name:'الأحقاف'},{id:47,name:'محمد'},{id:48,name:'الفتح'},{id:49,name:'الحجرات'},{id:50,name:'ق'},{id:51,name:'الذاريات'},{id:52,name:'الطور'},{id:53,name:'النجم'},{id:54,name:'القمر'},{id:55,name:'الرحمن'},{id:56,name:'الواقعة'},{id:57,name:'الحديد'},{id:58,name:'المجادلة'},{id:59,name:'الحشر'},{id:60,name:'الممتحنة'},{id:61,name:'الصف'},{id:62,name:'الجمعة'},{id:63,name:'المنافقون'},{id:64,name:'التغابن'},{id:65,name:'الطلاق'},{id:66,name:'التحريم'},{id:67,name:'الملك'},{id:68,name:'القلم'},{id:69,name:'الحاقة'},{id:70,name:'المعارج'},{id:71,name:'نوح'},{id:72,name:'الجن'},{id:73,name:'المزمل'},{id:74,name:'المدثر'},{id:75,name:'القيامة'},{id:76,name:'الإنسان'},{id:77,name:'المرسلات'},{id:78,name:'النبأ'},{id:79,name:'النازعات'},{id:80,name:'عبس'},{id:81,name:'التكوير'},{id:82,name:'الانفطار'},{id:83,name:'المطففين'},{id:84,name:'الانشقاق'},{id:85,name:'البروج'},{id:86,name:'الطارق'},{id:87,name:'الأعلى'},{id:88,name:'الغاشية'},{id:89,name:'الفجر'},{id:90,name:'البلد'},{id:91,name:'الشمس'},{id:92,name:'الليل'},{id:93,name:'الضحى'},{id:94,name:'الشرح'},{id:95,name:'التين'},{id:96,name:'العلق'},{id:97,name:'القدر'},{id:98,name:'البينة'},{id:99,name:'الزلزلة'},{id:100,name:'العاديات'},{id:101,name:'القارعة'},{id:102,name:'التكاثر'},{id:103,name:'العصر'},{id:104,name:'الهمزة'},{id:105,name:'الفيل'},{id:106,name:'قريش'},{id:107,name:'الماعون'},{id:108,name:'الكوثر'},{id:109,name:'الكافرون'},{id:110,name:'النصر'},{id:111,name:'المسد'},{id:112,name:'الإخلاص'},{id:113,name:'الفلق'},{id:114,name:'الناس'}
@@ -451,7 +458,7 @@ const initApp = async () => {
     currentRecordedBlob = e.detail;
     ui.btnPlayRecording.disabled = false;
     ui.btnPlayRecording.style.opacity = '1';
-    ui.speechResult.textContent = 'تم تسجيل تلاوتك بنجاح! يمكنك الآن الاستماع لتسجيلك بصدى المسجد أو إرساله لمعلمك.';
+    ui.speechResult.textContent = 'تم تسجيل تلاوتك بنجاح! يمكنك الاستماع لتسجيلك بالضغط على زر التشغيل أو إرساله لمعلمك.';
     ui.speechResult.classList.add('show');
     ui.btnSendTeacher.style.display = 'inline-flex';
   });
@@ -468,6 +475,7 @@ const initApp = async () => {
       AppState.player.isPlaying = false;
     }
 
+    // Stop current Web Audio playback if active
     if (currentPlayingSource) {
       currentPlayingSource.stop();
       currentPlayingSource = null;
@@ -479,67 +487,91 @@ const initApp = async () => {
       return;
     }
 
-    const AudioContextClass = window.AudioContext || window.webkitAudioContext;
-    currentPlayingCtx = new AudioContextClass();
-    
-    const reader = new FileReader();
-    reader.onload = async function() {
-      try {
-        if (!currentPlayingCtx) return;
-        const buffer = await currentPlayingCtx.decodeAudioData(reader.result);
-        currentPlayingSource = currentPlayingCtx.createBufferSource();
-        currentPlayingSource.buffer = buffer;
-        
-        // Reverb mosque echo effect (Dual delay lines simulation)
-        const dryNode = currentPlayingCtx.createGain();
-        const wetNode = currentPlayingCtx.createGain();
-        
-        const delay1 = currentPlayingCtx.createDelay(1.0);
-        const delay2 = currentPlayingCtx.createDelay(1.0);
-        const feedback1 = currentPlayingCtx.createGain();
-        const feedback2 = currentPlayingCtx.createGain();
-        
-        delay1.delayTime.value = 0.18;
-        delay2.delayTime.value = 0.28;
-        
-        feedback1.gain.value = 0.18; 
-        feedback2.gain.value = 0.15;
-        
-        dryNode.gain.value = 1.0;
-        wetNode.gain.value = 0.18; 
-        
-        delay1.connect(feedback1);
-        feedback1.connect(delay1);
-        
-        delay2.connect(feedback2);
-        feedback2.connect(delay2);
-        
-        currentPlayingSource.connect(dryNode);
-        dryNode.connect(currentPlayingCtx.destination);
-        
-        currentPlayingSource.connect(delay1);
-        currentPlayingSource.connect(delay2);
-        
-        delay1.connect(wetNode);
-        delay2.connect(wetNode);
-        wetNode.connect(currentPlayingCtx.destination);
-        
-        currentPlayingSource.start(0);
-        ui.btnPlayRecording.style.color = 'var(--accent-primary)';
-        
-        currentPlayingSource.onended = () => {
-          ui.btnPlayRecording.style.color = '';
-          currentPlayingSource = null;
-          if (currentPlayingCtx) {
-            currentPlayingCtx.close();
-            currentPlayingCtx = null;
-          }
-        };
-      } catch (e) {
-        console.error("Decoding audio failed", e);
-      }
-    };
-    reader.readAsArrayBuffer(currentRecordedBlob);
+    // Stop simple audio playback if active
+    if (currentPlayingRecording) {
+      currentPlayingRecording.pause();
+      currentPlayingRecording = null;
+      ui.btnPlayRecording.style.color = '';
+      return;
+    }
+
+    if (AppState.speech.liveEchoEnabled) {
+      // Play with Mosque Echo
+      const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+      currentPlayingCtx = new AudioContextClass();
+      
+      const reader = new FileReader();
+      reader.onload = async function() {
+        try {
+          if (!currentPlayingCtx) return;
+          const buffer = await currentPlayingCtx.decodeAudioData(reader.result);
+          currentPlayingSource = currentPlayingCtx.createBufferSource();
+          currentPlayingSource.buffer = buffer;
+          
+          const dryNode = currentPlayingCtx.createGain();
+          const wetNode = currentPlayingCtx.createGain();
+          
+          const delay1 = currentPlayingCtx.createDelay(1.0);
+          const delay2 = currentPlayingCtx.createDelay(1.0);
+          const feedback1 = currentPlayingCtx.createGain();
+          const feedback2 = currentPlayingCtx.createGain();
+          
+          delay1.delayTime.value = 0.18;
+          delay2.delayTime.value = 0.28;
+          
+          feedback1.gain.value = 0.18; 
+          feedback2.gain.value = 0.15;
+          
+          dryNode.gain.value = 1.0;
+          wetNode.gain.value = 0.18; 
+          
+          delay1.connect(feedback1);
+          feedback1.connect(delay1);
+          
+          delay2.connect(feedback2);
+          feedback2.connect(delay2);
+          
+          currentPlayingSource.connect(dryNode);
+          dryNode.connect(currentPlayingCtx.destination);
+          
+          currentPlayingSource.connect(delay1);
+          currentPlayingSource.connect(delay2);
+          
+          delay1.connect(wetNode);
+          delay2.connect(wetNode);
+          wetNode.connect(currentPlayingCtx.destination);
+          
+          currentPlayingSource.start(0);
+          ui.btnPlayRecording.style.color = 'var(--accent-primary)';
+          
+          currentPlayingSource.onended = () => {
+            ui.btnPlayRecording.style.color = '';
+            currentPlayingSource = null;
+            if (currentPlayingCtx) {
+              currentPlayingCtx.close();
+              currentPlayingCtx = null;
+            }
+          };
+        } catch (e) {
+          console.error("Decoding audio failed", e);
+        }
+      };
+      reader.readAsArrayBuffer(currentRecordedBlob);
+    } else {
+      // Play naturally
+      const url = URL.createObjectURL(currentRecordedBlob);
+      currentPlayingRecording = new Audio(url);
+      ui.btnPlayRecording.style.color = 'var(--accent-primary)';
+      
+      currentPlayingRecording.play().catch(err => {
+        console.error("Playback failed", err);
+      });
+
+      currentPlayingRecording.onended = () => {
+        ui.btnPlayRecording.style.color = '';
+        currentPlayingRecording = null;
+      };
+    }
   });
 
   window.addEventListener('speechend', (e) => {
@@ -730,10 +762,25 @@ const initApp = async () => {
     });
   }
 
+  // Sync live echo checkbox changes
+  if (ui.chkLiveEcho) {
+    ui.chkLiveEcho.addEventListener('change', (e) => {
+      AppState.speech.liveEchoEnabled = e.target.checked;
+      if (e.target.checked) {
+        if (ui.btnEcho) ui.btnEcho.style.color = 'var(--accent-primary)';
+      } else {
+        if (ui.btnEcho) ui.btnEcho.style.color = '';
+      }
+    });
+  }
+
   // Live Mosque Echo Toggle listener
   if (ui.btnEcho) {
     ui.btnEcho.addEventListener('click', () => {
       AppState.speech.liveEchoEnabled = !AppState.speech.liveEchoEnabled;
+      if (ui.chkLiveEcho) {
+        ui.chkLiveEcho.checked = AppState.speech.liveEchoEnabled;
+      }
       if (AppState.speech.liveEchoEnabled) {
         ui.btnEcho.style.color = 'var(--accent-primary)';
         ui.speechResult.textContent = 'تم تفعيل صدى المسجد المباشر! يرجى استخدام سماعات الأذن لتجنب الصفير.';
