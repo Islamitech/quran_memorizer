@@ -216,10 +216,12 @@ const initApp = async () => {
       if (AppState.speech.isListening) speechEngine.stop(); // Stop mic if audio plays
       ui.iconPlay.style.display = 'none';
       ui.iconPause.style.display = 'block';
+      document.body.classList.add('recitation-playing');
     } else {
       ui.iconPlay.style.display = 'block';
       ui.iconPause.style.display = 'none';
       ui.audio.pause();
+      document.body.classList.remove('recitation-playing');
     }
   });
 
