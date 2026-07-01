@@ -33,6 +33,7 @@ const initialState = {
   },
   player: {
     isPlaying: false,
+    repeatAyah: false,
     currentTime: 0,
     duration: 0,
     volume: 1.0,

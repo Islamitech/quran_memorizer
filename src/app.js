@@ -37,6 +37,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   const ui = {
     audio: document.getElementById('audio-player'),
     playBtn: document.getElementById('btn-play-pause'),
+    btnRepeat: document.getElementById('btn-repeat'),
     iconPlay: document.querySelector('.icon-play'),
     iconPause: document.querySelector('.icon-pause'),
     nextBtn: document.getElementById('btn-next'),
@@ -123,39 +124,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         opt.textContent = `آية ${i}`;
         ui.ayahSelect.appendChild(opt);
       }
-      
-      // Render all ayahs to display the full Surah
-      ui.quranDisplay.innerHTML = '';
-      
-      if (surahId != 1 && surahId != 9) {
-        ui.basmalah.style.display = 'block';
-      } else {
-        ui.basmalah.style.display = 'none';
-      }
-
-      data.arabic.forEach(ayah => {
-        const ayahContainer = document.createElement('span');
-        ayahContainer.id = `ayah-container-${ayah.id}`;
-        ayahContainer.className = 'ayah-wrapper-span';
-        ayahContainer.style.opacity = '0.4';
-        ayahContainer.style.transition = 'opacity 0.3s ease';
-        
-        ayah.words.forEach(word => {
-          const span = document.createElement('span');
-          span.className = 'word';
-          span.textContent = word;
-          ayahContainer.appendChild(span);
-          ayahContainer.appendChild(document.createTextNode(' '));
-        });
-
-        const marker = document.createElement('span');
-        marker.className = 'ayah-marker';
-        marker.textContent = ` ﴿${ayah.id.toLocaleString('ar-EG')}﴾ `;
-        ayahContainer.appendChild(marker);
-        
-        ui.quranDisplay.appendChild(ayahContainer);
-        ui.quranDisplay.appendChild(document.createTextNode(' '));
-      });
 
       // Select first ayah
       loadAyah(1, data.arabic);
@@ -191,24 +159,29 @@ document.addEventListener('DOMContentLoaded', async () => {
     ui.tafsirDisplay.innerHTML = `<strong>التفسير الميسر:</strong><br>${ayahData.tafsir || 'جاري التحميل...'}`;
     ui.translationDisplay.innerHTML = `<strong>Sahih International:</strong><br>${ayahData.translation || 'Loading...'}`;
     
-    // Highlight active ayah and scroll
-    document.querySelectorAll('.ayah-wrapper-span').forEach(el => {
-      el.style.opacity = '0.4';
-    });
-    
-    const activeContainer = document.getElementById(`ayah-container-${ayahNumber}`);
-    if (activeContainer) {
-      activeContainer.style.opacity = '1';
-      activeContainer.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    // Basmalah logic
+    if (ayahNumber == 1 && AppState.current.surah.id != 1 && AppState.current.surah.id != 9) {
+      ui.basmalah.style.display = 'block';
+    } else {
+      ui.basmalah.style.display = 'none';
     }
+
+    // Display words
+    ui.quranDisplay.innerHTML = '';
+    ayahData.words.forEach(word => {
+      const span = document.createElement('span');
+      span.className = 'word';
+      span.textContent = word;
+      ui.quranDisplay.appendChild(span);
+    });
 
     // Update Audio
     const reciter = AppState.settings.reciter || 'mishary';
     ui.audio.src = quranAPI.generateAudioUrl(AppState.current.surah.id, ayahNumber, reciter);
+    ui.audio.volume = 1.0;
+    ui.audio.muted = false;
     
-    if (activeContainer) {
-      karaokeEngine.setWords(ayahData.text, activeContainer);
-    }
+    karaokeEngine.setWords(ayahData.text, ui.quranDisplay);
     
     // Play automatically if playing
     if(AppState.player.isPlaying) {
@@ -244,13 +217,18 @@ document.addEventListener('DOMContentLoaded', async () => {
   ui.audio.addEventListener('play', () => AppState.player.isPlaying = true);
   ui.audio.addEventListener('pause', () => AppState.player.isPlaying = false);
   ui.audio.addEventListener('ended', () => {
-    // Next ayah
-    const next = parseInt(AppState.current.ayah.id) + 1;
-    if(next <= AppState.current.surah.ayahCount) {
-        loadAyah(next);
-        ui.audio.play();
+    if (AppState.player.repeatAyah) {
+      ui.audio.currentTime = 0;
+      ui.audio.play();
     } else {
-        AppState.player.isPlaying = false;
+      // Next ayah
+      const next = parseInt(AppState.current.ayah.id) + 1;
+      if(next <= AppState.current.surah.ayahCount) {
+          loadAyah(next);
+          ui.audio.play();
+      } else {
+          AppState.player.isPlaying = false;
+      }
     }
   });
 
@@ -276,6 +254,8 @@ document.addEventListener('DOMContentLoaded', async () => {
       AppState.player.isPlaying = false;
     } else {
       if (AppState.speech.isListening) speechEngine.stop();
+      ui.audio.volume = 1.0;
+      ui.audio.muted = false;
       ui.audio.play().catch(e => {
         alert("لم نتمكن من تشغيل الصوت. تأكد من اتصالك بالإنترنت. " + e.message);
         AppState.player.isPlaying = false;
@@ -283,6 +263,17 @@ document.addEventListener('DOMContentLoaded', async () => {
       AppState.player.isPlaying = true;
     }
   });
+
+  if (ui.btnRepeat) {
+    ui.btnRepeat.addEventListener('click', () => {
+      AppState.player.repeatAyah = !AppState.player.repeatAyah;
+      if (AppState.player.repeatAyah) {
+        ui.btnRepeat.style.color = 'var(--accent-primary)';
+      } else {
+        ui.btnRepeat.style.color = '';
+      }
+    });
+  }
 
   ui.nextBtn.addEventListener('click', () => {
     const next = parseInt(AppState.current.ayah.id) + 1;
@@ -516,21 +507,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
   }
 
-  // Mosque Echo Effect (Web Audio API)
-  let audioCtx, source, convolver;
-  let isEchoOn = false;
-
-  function createMosqueImpulseResponse(ctx) {
-    const rate = ctx.sampleRate;
-    const length = rate * 2.5; // 2.5 seconds reverb
-    const impulse = ctx.createBuffer(2, length, rate);
-    const left = impulse.getChannelData(0);
-    const right = impulse.getChannelData(1);
-    for (let i = 0; i < length; i++) {
-        const n = length - i;
-        const e = Math.pow(n / length, 3);
-        left[i] = (Math.random() * 2 - 1) * e;
-        right[i] = (Math.random() * 2 - 1) * e;
     }
     return impulse;
   }
