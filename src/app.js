@@ -159,6 +159,52 @@ const initApp = async () => {
     }
   }
 
+  async function checkOfflineStatusAndAlert() {
+    if (!navigator.onLine) {
+      const cachedKeys = await DbManager.getCachedKeys();
+      const cachedSurahIds = new Set();
+      cachedKeys.forEach(key => {
+        const parts = key.split('_S');
+        if (parts.length > 1) {
+          const surahId = parseInt(parts[1].split('_')[0]);
+          cachedSurahIds.add(surahId);
+        }
+      });
+      
+      if (cachedSurahIds.size > 0) {
+        const names = Array.from(cachedSurahIds)
+          .map(id => surahsData.find(s => s.id === id)?.name)
+          .filter(Boolean)
+          .join('، ');
+        ui.speechResult.textContent = `تنبيه: أنت غير متصل بالإنترنت. السور المتاحة للاستماع إليها حالياً دون اتصال هي: سورة (${names}) فقط.`;
+        ui.speechResult.classList.add('show');
+        setTimeout(() => ui.speechResult.classList.remove('show'), 8000);
+      } else {
+        ui.speechResult.textContent = 'تنبيه: أنت غير متصل بالإنترنت، ولا توجد سور محفوظة مسبقاً للاستماع إليها دون اتصال.';
+        ui.speechResult.classList.add('show');
+        setTimeout(() => ui.speechResult.classList.remove('show'), 6000);
+      }
+    }
+  }
+
+  function updateMediaSessionMetadata(ayahNumber) {
+    if ('mediaSession' in navigator) {
+      const currentSurah = AppState.current.surah.name || '';
+      const reciterId = AppState.settings.reciter || 'mishary';
+      const reciterName = reciters.find(r => r.id === reciterId)?.name || 'القارئ';
+      
+      navigator.mediaSession.metadata = new MediaMetadata({
+        title: `سورة ${currentSurah} - آية ${ayahNumber}`,
+        artist: reciterName,
+        album: 'محفّظ',
+        artwork: [
+          { src: './icon-192.png', sizes: '192x192', type: 'image/png' },
+          { src: './icon-512.png', sizes: '512x512', type: 'image/png' }
+        ]
+      });
+    }
+  }
+
   function loadAyah(ayahNumber, arabicData) {
     if(!arabicData) {
         // Find in cache
@@ -234,18 +280,53 @@ const initApp = async () => {
     marker.textContent = `﴿${parseInt(ayahNumber).toLocaleString('ar-EG')}﴾`;
     ui.quranDisplay.appendChild(marker);
 
-    // Update Audio
+    // Update Audio (Offline caching first)
     const reciter = AppState.settings.reciter || 'mishary';
-    ui.audio.src = quranAPI.generateAudioUrl(AppState.current.surah.id, ayahNumber, reciter);
-    ui.audio.volume = 1.0;
-    ui.audio.muted = false;
+    const surahId = AppState.current.surah.id;
     
-    karaokeEngine.setWords(ayahData.text, ui.quranDisplay);
-    
-    // Play automatically if playing
-    if(AppState.player.isPlaying) {
-      if (AppState.speech.isListening) speechEngine.stop(); // Prevent overlap
-      ui.audio.play().catch(e => { AppState.player.isPlaying = false; });
+    DbManager.getOfflineAudio(reciter, surahId, ayahNumber).then(cachedBlob => {
+      if (cachedBlob) {
+        const localUrl = URL.createObjectURL(cachedBlob);
+        ui.audio.src = localUrl;
+        playAudio();
+      } else {
+        const netUrl = quranAPI.generateAudioUrl(surahId, ayahNumber, reciter);
+        if (navigator.onLine) {
+          ui.audio.src = netUrl;
+          playAudio();
+          
+          // Download in background for offline use
+          fetch(netUrl)
+            .then(res => {
+              if (res.ok) return res.blob();
+              throw new Error("Fetch failed");
+            })
+            .then(blob => {
+              DbManager.saveOfflineAudio(reciter, surahId, ayahNumber, blob);
+            })
+            .catch(err => console.warn("Background audio cache failed:", err));
+        } else {
+          ui.audio.src = '';
+          AppState.player.isPlaying = false;
+          checkOfflineStatusAndAlert();
+        }
+      }
+    });
+
+    function playAudio() {
+      ui.audio.volume = 1.0;
+      ui.audio.muted = false;
+      
+      karaokeEngine.setWords(ayahData.text, ui.quranDisplay);
+      
+      // Update background OS lockscreen metadata
+      updateMediaSessionMetadata(ayahNumber);
+      
+      // Play automatically if playing state is true
+      if (AppState.player.isPlaying) {
+        if (AppState.speech.isListening) speechEngine.stop(); // Prevent overlap
+        ui.audio.play().catch(e => { AppState.player.isPlaying = false; });
+      }
     }
   }
 
@@ -863,8 +944,37 @@ const initApp = async () => {
     });
   }
 
+  // Media Session background audio action controls (Lockscreen buttons)
+  if ('mediaSession' in navigator) {
+    navigator.mediaSession.setActionHandler('play', () => {
+      AppState.player.isPlaying = true;
+      ui.audio.play();
+    });
+    navigator.mediaSession.setActionHandler('pause', () => {
+      AppState.player.isPlaying = false;
+      ui.audio.pause();
+    });
+    navigator.mediaSession.setActionHandler('previoustrack', () => {
+      const prev = parseInt(AppState.current.ayah.id) - 1;
+      if (prev >= 1) loadAyah(prev);
+    });
+    navigator.mediaSession.setActionHandler('nexttrack', () => {
+      const next = parseInt(AppState.current.ayah.id) + 1;
+      if (next <= AppState.current.surah.ayahCount) loadAyah(next);
+    });
+  }
+
   // PWA Install Logic
   let deferredPrompt;
+  
+  // Show install button for web app installation if not standalone
+  const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
+  if (!isStandalone) {
+    if (ui.btnInstall) {
+      ui.btnInstall.style.display = 'inline-flex';
+    }
+  }
+
   window.addEventListener('beforeinstallprompt', (e) => {
     e.preventDefault();
     deferredPrompt = e;
@@ -882,9 +992,15 @@ const initApp = async () => {
           ui.btnInstall.style.display = 'none';
         }
         deferredPrompt = null;
+      } else {
+        // iOS Safari manual walkthrough or generic guide
+        alert("تثبيت التطبيق على هاتف الذكي:\n\n• للآيفون (iOS): اضغط على زر مشاركة في متصفح Safari ثم اختر 'إضافة إلى الصفحة الرئيسية' (Add to Home Screen).\n\n• للأندرويد: اضغط على نقاط القائمة الجانبية للمتصفح ثم اختر 'تثبيت التطبيق' (Install App).");
       }
     });
   }
+
+  // Initial offline alert check on boot
+  checkOfflineStatusAndAlert();
 
   // Initial load
   loadSurah(AppState.current.surah.id);
