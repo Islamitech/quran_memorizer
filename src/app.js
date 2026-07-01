@@ -688,6 +688,23 @@ const initApp = async () => {
     ui.listeningRepeatContainer.style.display = e.target.checked ? 'block' : 'none';
   });
 
+  // Search filter logic for surahs checklist in modal
+  const txtSearchSurahs = document.getElementById('txt-search-listening-surahs');
+  if (txtSearchSurahs) {
+    txtSearchSurahs.addEventListener('input', (e) => {
+      const query = e.target.value.trim().toLowerCase();
+      const labels = ui.listeningSurahsList.querySelectorAll('label');
+      labels.forEach(label => {
+        const text = label.textContent.toLowerCase();
+        if (text.includes(query)) {
+          label.style.display = 'flex';
+        } else {
+          label.style.display = 'none';
+        }
+      });
+    });
+  }
+
   // Listening Mode Trigger Modal
   if (ui.btnListening) {
     ui.btnListening.addEventListener('click', () => {
@@ -700,6 +717,12 @@ const initApp = async () => {
         AppState.player.isPlaying = false;
         ui.audio.pause();
       } else {
+        // Reset search query
+        if (txtSearchSurahs) {
+          txtSearchSurahs.value = '';
+          const labels = ui.listeningSurahsList.querySelectorAll('label');
+          labels.forEach(l => l.style.display = 'flex');
+        }
         // Open modal
         ui.modalOverlay.style.display = 'block';
         ui.listeningModal.style.display = 'flex';
