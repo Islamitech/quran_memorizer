@@ -1,6 +1,6 @@
 // sw.js - Service Worker المتقدم
 
-const CACHE_VERSION = 'v2';
+const CACHE_VERSION = 'v3';
 const CACHE_NAMES = {
   static: `static-${CACHE_VERSION}`,
   audio: `audio-${CACHE_VERSION}`,
@@ -9,11 +9,11 @@ const CACHE_NAMES = {
 };
 
 const STATIC_ASSETS = [
-  '/',
-  '/index.html',
-  '/styles/main.css',
-  '/styles/components.css',
-  '/manifest.json'
+  './',
+  './index.html',
+  './styles/main.css',
+  './styles/components.css',
+  './manifest.json'
 ];
 
 // استراتيجيات التخزين المختلفة
