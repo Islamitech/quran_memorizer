@@ -187,6 +187,14 @@ const initApp = async () => {
       ui.basmalah.style.display = 'none';
     }
 
+    // Update focused title in focus mode
+    const focusedTitle = document.getElementById('focused-ayah-title');
+    if (focusedTitle) {
+      const surahName = AppState.current.surah.name || '';
+      const repeatText = AppState.player.repeatAyah ? ' (تكرار مفعل)' : '';
+      focusedTitle.textContent = `سورة ${surahName} - آية ${ayahNumber}${repeatText}`;
+    }
+
     // Display words
     ui.quranDisplay.innerHTML = '';
     ayahData.words.forEach(word => {
@@ -194,7 +202,20 @@ const initApp = async () => {
       span.className = 'word';
       span.textContent = word;
       ui.quranDisplay.appendChild(span);
+      ui.quranDisplay.appendChild(document.createTextNode(' '));
     });
+
+    // Append traditional Arabic end-of-ayah marker
+    const marker = document.createElement('span');
+    marker.className = 'ayah-number-marker';
+    marker.style.fontFamily = 'var(--font-quran)';
+    marker.style.fontSize = '0.8em';
+    marker.style.color = 'var(--text-secondary)';
+    marker.style.opacity = '0.8';
+    marker.style.marginRight = '6px';
+    marker.style.userSelect = 'none';
+    marker.textContent = `﴿${parseInt(ayahNumber).toLocaleString('ar-EG')}﴾`;
+    ui.quranDisplay.appendChild(marker);
 
     // Update Audio
     const reciter = AppState.settings.reciter || 'mishary';
@@ -295,6 +316,13 @@ const initApp = async () => {
         ui.btnRepeat.style.color = 'var(--accent-primary)';
       } else {
         ui.btnRepeat.style.color = '';
+      }
+      // Update focused title repeat status immediately!
+      const focusedTitle = document.getElementById('focused-ayah-title');
+      if (focusedTitle) {
+        const surahName = AppState.current.surah.name || '';
+        const repeatText = AppState.player.repeatAyah ? ' (تكرار مفعل)' : '';
+        focusedTitle.textContent = `سورة ${surahName} - آية ${AppState.current.ayah.id}${repeatText}`;
       }
     });
   }

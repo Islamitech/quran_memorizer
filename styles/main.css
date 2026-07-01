@@ -216,13 +216,18 @@ body.recitation-playing .selectors-card,
 body.recitation-playing .view-toggles,
 body.recitation-playing .mic-control-group,
 body.recitation-playing #btn-next,
-body.recitation-playing #btn-prev,
-body.recitation-playing #btn-repeat {
+body.recitation-playing #btn-prev {
   display: none !important;
+}
+
+body.recitation-playing #focused-ayah-title {
+  display: block !important;
 }
 
 body.recitation-playing .player-buttons {
   justify-content: center;
+  align-items: center;
+  gap: 20px;
   width: 100%;
 }
 
