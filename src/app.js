@@ -241,9 +241,18 @@ document.addEventListener('DOMContentLoaded', async () => {
     if(dur) ui.timeTotal.textContent = fmt(dur);
   });
 
-  // UI Event Listeners
   ui.playBtn.addEventListener('click', () => {
-    AppState.player.isPlaying = !AppState.player.isPlaying;
+    if (AppState.player.isPlaying) {
+      ui.audio.pause();
+      AppState.player.isPlaying = false;
+    } else {
+      if (AppState.speech.isListening) speechEngine.stop();
+      ui.audio.play().catch(e => {
+        alert("لم نتمكن من تشغيل الصوت. تأكد من اتصالك بالإنترنت. " + e.message);
+        AppState.player.isPlaying = false;
+      });
+      AppState.player.isPlaying = true;
+    }
   });
 
   ui.nextBtn.addEventListener('click', () => {

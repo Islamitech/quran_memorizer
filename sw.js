@@ -78,7 +78,8 @@ self.addEventListener('fetch', (event) => {
   if (url.hostname.includes('alquran.cloud')) {
     strategy = STRATEGIES['network-first'];
   } else if (url.pathname.endsWith('.mp3') || url.pathname.endsWith('.m4a')) {
-    strategy = STRATEGIES['stale-while-revalidate'];
+    // Bypass service worker for audio to prevent 206 Partial Content caching issues
+    return;
   } else if (url.pathname.includes('/api/')) {
     strategy = STRATEGIES['network-first'];
   } else {
