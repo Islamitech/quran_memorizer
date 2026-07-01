@@ -47,51 +47,6 @@ export class SpeechEngine {
       } catch(recError) {
         console.warn("Recognition already started or failed:", recError);
       }
-
-      // Live mosque echo support during recitation
-      if (AppState.speech.liveEchoEnabled) {
-        try {
-          const AudioContextClass = window.AudioContext || window.webkitAudioContext;
-          this.liveEchoCtx = new AudioContextClass();
-          this.liveEchoSource = this.liveEchoCtx.createMediaStreamSource(stream);
-          
-          // Mosque delay reverb simulation
-          const dryNode = this.liveEchoCtx.createGain();
-          const wetNode = this.liveEchoCtx.createGain();
-          
-          const delay1 = this.liveEchoCtx.createDelay(1.0);
-          const delay2 = this.liveEchoCtx.createDelay(1.0);
-          const feedback1 = this.liveEchoCtx.createGain();
-          const feedback2 = this.liveEchoCtx.createGain();
-          
-          delay1.delayTime.value = 0.18;
-          delay2.delayTime.value = 0.28;
-          
-          feedback1.gain.value = 0.18; 
-          feedback2.gain.value = 0.15;
-          
-          dryNode.gain.value = 1.0;
-          wetNode.gain.value = 0.18; 
-          
-          delay1.connect(feedback1);
-          feedback1.connect(delay1);
-          
-          delay2.connect(feedback2);
-          feedback2.connect(delay2);
-          
-          this.liveEchoSource.connect(dryNode);
-          dryNode.connect(this.liveEchoCtx.destination);
-          
-          this.liveEchoSource.connect(delay1);
-          this.liveEchoSource.connect(delay2);
-          
-          delay1.connect(wetNode);
-          delay2.connect(wetNode);
-          wetNode.connect(this.liveEchoCtx.destination);
-        } catch(audioErr) {
-          console.error("Live echo audio graph failed to build:", audioErr);
-        }
-      }
       
       this.mediaRecorder = new MediaRecorder(stream);
       this.audioChunks = [];
@@ -134,15 +89,6 @@ export class SpeechEngine {
         this.mediaRecorder.stop();
       }
     } catch(e) {}
-    
-    // Stop live echo Context
-    if (this.liveEchoCtx) {
-      try {
-        this.liveEchoCtx.close();
-      } catch(ctxErr) {}
-      this.liveEchoCtx = null;
-      this.liveEchoSource = null;
-    }
     AppState.speech.isListening = false;
   }
   

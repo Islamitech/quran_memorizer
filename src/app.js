@@ -783,12 +783,12 @@ const initApp = async () => {
       }
       if (AppState.speech.liveEchoEnabled) {
         ui.btnEcho.style.color = 'var(--accent-primary)';
-        ui.speechResult.textContent = 'تم تفعيل صدى المسجد المباشر! يرجى استخدام سماعات الأذن لتجنب الصفير.';
+        ui.speechResult.textContent = 'تم تفعيل تأثير صدى المسجد للتسميع.';
         ui.speechResult.classList.add('show');
-        setTimeout(() => ui.speechResult.classList.remove('show'), 4000);
+        setTimeout(() => ui.speechResult.classList.remove('show'), 2500);
       } else {
         ui.btnEcho.style.color = '';
-        ui.speechResult.textContent = 'تم إيقاف صدى المسجد المباشر.';
+        ui.speechResult.textContent = 'تم إيقاف صدى المسجد للتسميع (صوت طبيعي).';
         ui.speechResult.classList.add('show');
         setTimeout(() => ui.speechResult.classList.remove('show'), 2000);
       }
