@@ -689,7 +689,33 @@ const initApp = async () => {
   }
 
 
-  // Populate the surahs checklist and repeat options inside the modal
+  // Dynamically update the repeat Surah selection dropdown based on checked Surahs
+  function updateRepeatDropdown() {
+    ui.listeningRepeatSelect.innerHTML = '';
+    const checkedBoxes = Array.from(document.querySelectorAll('.listening-surah-chk:checked'));
+    
+    if (checkedBoxes.length === 0) {
+      const opt = document.createElement('option');
+      opt.value = '';
+      opt.textContent = 'يرجى اختيار السور أولاً';
+      opt.disabled = true;
+      ui.listeningRepeatSelect.appendChild(opt);
+      return;
+    }
+    
+    checkedBoxes.forEach(cb => {
+      const id = parseInt(cb.value);
+      const sData = surahsData.find(s => s.id === id);
+      if (sData) {
+        const opt = document.createElement('option');
+        opt.value = id;
+        opt.textContent = sData.name;
+        ui.listeningRepeatSelect.appendChild(opt);
+      }
+    });
+  }
+
+  // Populate the surahs checklist inside the modal
   surahsData.forEach(s => {
     const label = document.createElement('label');
     label.style.display = 'flex';
@@ -706,15 +732,15 @@ const initApp = async () => {
       chk.checked = true;
     }
     
+    chk.addEventListener('change', updateRepeatDropdown);
+    
     label.appendChild(chk);
     label.appendChild(document.createTextNode(s.name));
     ui.listeningSurahsList.appendChild(label);
-
-    const opt = document.createElement('option');
-    opt.value = s.id;
-    opt.textContent = s.name;
-    ui.listeningRepeatSelect.appendChild(opt);
   });
+
+  // Initial call to populate with pre-selected surahs
+  updateRepeatDropdown();
 
   ui.chkRepeatSurah.addEventListener('change', (e) => {
     ui.listeningRepeatContainer.style.display = e.target.checked ? 'block' : 'none';

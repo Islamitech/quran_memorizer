@@ -174,26 +174,70 @@ select:focus, input[list]:focus {
 
 /* Child Mode Theme Override */
 body.theme-child {
-  --bg-page: #e0f2fe;
+  --bg-page: #f0f9ff;
   --bg-card: #ffffff;
   --text-primary: #1e3a8a;
-  --text-secondary: #3b82f6;
-  --accent-primary: #f59e0b; /* Amber/Orange */
+  --text-secondary: #0284c7;
+  --accent-primary: #ff9f43; /* Bright friendly orange */
   --accent-primary-light: #fef3c7;
-  --border-light: #bfdbfe;
+  --border-light: #bae6fd;
+  
+  background-image: radial-gradient(#bae6fd 1.5px, transparent 1.5px), radial-gradient(#fef3c7 1.5px, transparent 1.5px);
+  background-size: 24px 24px;
+  background-position: 0 0, 12px 12px;
 }
 
-body.theme-child .ayah-container {
-  font-size: 4rem;
-  line-height: 2.5;
-  color: #1e40af;
+body.theme-child .logo h1::after {
+  content: " 🧒🎈";
+  font-size: 1.2rem;
+}
+
+body.theme-child .selectors-card,
+body.theme-child .quran-card {
+  border: 3px solid #bae6fd;
+  border-radius: 24px;
+  box-shadow: 0 8px 0 #bae6fd;
+  transform: translateY(-2px);
+  transition: all 0.2s ease;
+}
+
+body.theme-child .progress-badge {
+  background-color: #fef3c7 !important;
+  color: #d97706 !important;
+  border: 2px dashed #f59e0b;
+  padding: 6px 14px;
+  border-radius: 20px;
+  animation: kid-pulse 2s infinite ease-in-out;
+}
+
+body.theme-child .progress-badge::before {
+  content: "⭐ ";
+}
+
+body.theme-child .mic-btn-minimal {
+  background-color: #ffecd2 !important;
+  color: #ff7675 !important;
+  border: 2px solid #fab1a0 !important;
+  box-shadow: 0 4px 0 #fab1a0 !important;
+  transition: all 0.1s ease;
+}
+
+body.theme-child .mic-btn-minimal:active {
+  transform: translateY(4px);
+  box-shadow: none !important;
 }
 
 body.theme-child .karaoke-active {
-  color: #d97706;
-  background-color: #fef3c7;
-  border-radius: 12px;
-  padding: 8px 16px;
+  color: #ea580c !important;
+  background-color: #ffedd5 !important;
+  border-radius: 8px;
+  padding: 2px 6px;
+}
+
+@keyframes kid-pulse {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.06); }
+  100% { transform: scale(1); }
 }
 
 /* Listening Mode Theme */
