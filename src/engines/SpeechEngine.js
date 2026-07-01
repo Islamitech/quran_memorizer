@@ -1,5 +1,6 @@
 import { AppState } from '../core/State.js';
 import { MatchAlgorithm } from './MatchAlgorithm.js';
+import { DbManager } from '../utils/DbManager.js';
 
 export class SpeechEngine {
   constructor() {
@@ -54,6 +55,13 @@ export class SpeechEngine {
       
       this.mediaRecorder.onstop = () => {
         const audioBlob = new Blob(this.audioChunks, { type: 'audio/webm' });
+        
+        DbManager.saveAudioRecording(AppState.current.surah.id, AppState.current.ayah.id, audioBlob)
+          .then(() => {
+            window.dispatchEvent(new CustomEvent('recordingready', { detail: audioBlob }));
+          })
+          .catch(err => console.error("Failed to save audio recording:", err));
+
         const reader = new FileReader();
         reader.readAsDataURL(audioBlob);
         reader.onloadend = () => {
@@ -86,13 +94,11 @@ export class SpeechEngine {
     let finalTranscript = '';
     let interimTranscript = '';
     let latestConfidence = 0;
-    let isFinal = false;
     
     for (let i = event.resultIndex; i < event.results.length; ++i) {
       if (event.results[i].isFinal) {
         finalTranscript += event.results[i][0].transcript + ' ';
         latestConfidence = event.results[i][0].confidence;
-        isFinal = true;
       } else {
         interimTranscript += event.results[i][0].transcript;
       }
@@ -104,29 +110,13 @@ export class SpeechEngine {
     AppState.speech.detectedText = text;
     AppState.speech.confidence = latestConfidence;
     
-    const currentAyah = AppState.current.ayah.text || '';
-    const matchScore = this.matchAlgo.calculateMatchScore(text, currentAyah);
-    
     window.dispatchEvent(new CustomEvent('speechresult', {
-      detail: { text, confidence: latestConfidence, matchScore, isFinal }
+      detail: { text, confidence: latestConfidence }
     }));
-    
-    if (isFinal) {
-      if (matchScore > 0.8) {
-        window.dispatchEvent(new CustomEvent('ayahmatched', {
-          detail: { ayahId: AppState.current.ayah.id, score: matchScore }
-        }));
-      } else {
-        window.dispatchEvent(new CustomEvent('ayahmismatched', {
-          detail: { ayahId: AppState.current.ayah.id, score: matchScore, text }
-        }));
-      }
-    }
   }
 
   handleError(event) {
     console.error("Speech recognition error", event.error);
-    AppState.speech.isListening = false;
     window.dispatchEvent(new CustomEvent('speecherror', { detail: event.error }));
   }
 
