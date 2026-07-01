@@ -507,40 +507,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
   }
 
-    }
-    return impulse;
-  }
-
-  if (ui.btnEcho) {
-    ui.btnEcho.addEventListener('click', () => {
-      if (!audioCtx) {
-        const AudioContext = window.AudioContext || window.webkitAudioContext;
-        audioCtx = new AudioContext();
-        // Allow cross-origin audio to be processed if needed (depends on everyayah cors)
-        ui.audio.crossOrigin = "anonymous"; 
-        source = audioCtx.createMediaElementSource(ui.audio);
-        convolver = audioCtx.createConvolver();
-        convolver.buffer = createMosqueImpulseResponse(audioCtx);
-        source.connect(audioCtx.destination); // Initial dry connection
-      }
-      
-      if (audioCtx.state === 'suspended') {
-          audioCtx.resume();
-      }
-
-      isEchoOn = !isEchoOn;
-      
-      if (isEchoOn) {
-        ui.btnEcho.style.color = 'var(--accent-primary)';
-        source.connect(convolver);
-        convolver.connect(audioCtx.destination);
-      } else {
-        ui.btnEcho.style.color = '';
-        source.disconnect(convolver);
-        convolver.disconnect(audioCtx.destination);
-      }
-    });
-  }
 
   // Listening Mode Toggle
   if (ui.btnListening) {
