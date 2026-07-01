@@ -124,6 +124,39 @@ document.addEventListener('DOMContentLoaded', async () => {
         ui.ayahSelect.appendChild(opt);
       }
       
+      // Render all ayahs to display the full Surah
+      ui.quranDisplay.innerHTML = '';
+      
+      if (surahId != 1 && surahId != 9) {
+        ui.basmalah.style.display = 'block';
+      } else {
+        ui.basmalah.style.display = 'none';
+      }
+
+      data.arabic.forEach(ayah => {
+        const ayahContainer = document.createElement('span');
+        ayahContainer.id = `ayah-container-${ayah.id}`;
+        ayahContainer.className = 'ayah-wrapper-span';
+        ayahContainer.style.opacity = '0.4';
+        ayahContainer.style.transition = 'opacity 0.3s ease';
+        
+        ayah.words.forEach(word => {
+          const span = document.createElement('span');
+          span.className = 'word';
+          span.textContent = word;
+          ayahContainer.appendChild(span);
+          ayahContainer.appendChild(document.createTextNode(' '));
+        });
+
+        const marker = document.createElement('span');
+        marker.className = 'ayah-marker';
+        marker.textContent = ` ﴿${ayah.id.toLocaleString('ar-EG')}﴾ `;
+        ayahContainer.appendChild(marker);
+        
+        ui.quranDisplay.appendChild(ayahContainer);
+        ui.quranDisplay.appendChild(document.createTextNode(' '));
+      });
+
       // Select first ayah
       loadAyah(1, data.arabic);
       
@@ -158,26 +191,24 @@ document.addEventListener('DOMContentLoaded', async () => {
     ui.tafsirDisplay.innerHTML = `<strong>التفسير الميسر:</strong><br>${ayahData.tafsir || 'جاري التحميل...'}`;
     ui.translationDisplay.innerHTML = `<strong>Sahih International:</strong><br>${ayahData.translation || 'Loading...'}`;
     
-    // Basmalah logic
-    if (ayahNumber == 1 && AppState.current.surah.id != 1 && AppState.current.surah.id != 9) {
-      ui.basmalah.style.display = 'block';
-    } else {
-      ui.basmalah.style.display = 'none';
-    }
-
-    // Display words
-    ui.quranDisplay.innerHTML = '';
-    ayahData.words.forEach(word => {
-      const span = document.createElement('span');
-      span.className = 'word';
-      span.textContent = word;
-      ui.quranDisplay.appendChild(span);
+    // Highlight active ayah and scroll
+    document.querySelectorAll('.ayah-wrapper-span').forEach(el => {
+      el.style.opacity = '0.4';
     });
+    
+    const activeContainer = document.getElementById(`ayah-container-${ayahNumber}`);
+    if (activeContainer) {
+      activeContainer.style.opacity = '1';
+      activeContainer.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
 
     // Update Audio
     const reciter = AppState.settings.reciter || 'mishary';
     ui.audio.src = quranAPI.generateAudioUrl(AppState.current.surah.id, ayahNumber, reciter);
-    karaokeEngine.setWords(ayahData.text, ui.quranDisplay);
+    
+    if (activeContainer) {
+      karaokeEngine.setWords(ayahData.text, activeContainer);
+    }
     
     // Play automatically if playing
     if(AppState.player.isPlaying) {
@@ -191,11 +222,9 @@ document.addEventListener('DOMContentLoaded', async () => {
       if (AppState.speech.isListening) speechEngine.stop(); // Stop mic if audio plays
       ui.iconPlay.style.display = 'none';
       ui.iconPause.style.display = 'block';
-      ui.audio.play();
     } else {
       ui.iconPlay.style.display = 'block';
       ui.iconPause.style.display = 'none';
-      ui.audio.pause();
     }
   });
 
