@@ -19,13 +19,13 @@ const tour = new InteractiveTour();
 // Register Service Worker
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('/sw.js').then(reg => {
+    navigator.serviceWorker.register('./sw.js').then(reg => {
       console.log('SW registered!', reg);
     }).catch(err => console.log('SW registration failed', err));
   });
 }
 
-document.addEventListener('DOMContentLoaded', async () => {
+const initApp = async () => {
   // Load state from storage
   const savedState = window.storageManager.load('quran_app_state');
   if (savedState) {
@@ -546,4 +546,10 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   // Initial load
   loadSurah(AppState.current.surah.id);
-});
+};
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', initApp);
+} else {
+  initApp();
+}
