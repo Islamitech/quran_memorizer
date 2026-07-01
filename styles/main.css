@@ -52,7 +52,8 @@ body {
 #app {
   width: 100%;
   max-width: 600px;
-  height: 100vh;
+  min-height: 100vh;
+  min-height: 100dvh;
   display: flex;
   flex-direction: column;
   position: relative;

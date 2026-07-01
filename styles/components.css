@@ -67,23 +67,22 @@ select:focus {
 .quran-card {
   flex: 1;
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   justify-content: center;
-  min-height: 40vh;
-  max-height: 60vh;
-  overflow-y: auto;
+  min-height: 35vh;
+  padding: 10px;
 }
 
 .ayah-wrapper {
   width: 100%;
-  padding: 20px;
+  padding: 10px;
 }
 
 .ayah-container {
   font-family: var(--font-quran);
-  font-size: 3rem;
+  font-size: clamp(2rem, 7vw, 2.8rem);
   text-align: center;
-  line-height: 2.2;
+  line-height: 2.0;
   direction: rtl;
   color: var(--text-primary);
 }
