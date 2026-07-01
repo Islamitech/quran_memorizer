@@ -1,31 +1,22 @@
 {
-  "name": "محفّظ القرآن الكريم",
-  "short_name": "محفّظ القرآن",
-  "description": "منصة ذكية وتفاعلية لتسهيل حفظ ومراجعة وتسميع القرآن الكريم صوتياً مع ميزات التحقق الذكي وصدى المسجد ووضع الأطفال المبهج",
-  "start_url": ".",
+  "name": "محفّظ القرآن",
+  "short_name": "محفّظ",
+  "description": "تطبيق ويب تقدمي لحفظ القرآن الكريم",
+  "start_url": "/",
   "display": "standalone",
-  "background_color": "#0b0f19",
-  "theme_color": "#0b0f19",
-  "orientation": "portrait-primary",
-  "categories": ["education", "books", "utilities"],
+  "background_color": "#0a0a0a",
+  "theme_color": "#0a0a0a",
+  "orientation": "portrait",
   "icons": [
     {
-      "src": "icon-192.png",
+      "src": "/icons/icon-192.png",
       "sizes": "192x192",
-      "type": "image/png",
-      "purpose": "any maskable"
+      "type": "image/png"
     },
     {
-      "src": "icon-512.png",
+      "src": "/icons/icon-512.png",
       "sizes": "512x512",
-      "type": "image/png",
-      "purpose": "any maskable"
-    },
-    {
-      "src": "icon.svg",
-      "sizes": "any",
-      "type": "image/svg+xml",
-      "purpose": "any maskable"
+      "type": "image/png"
     }
   ]
 }
