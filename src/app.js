@@ -730,6 +730,24 @@ const initApp = async () => {
     });
   }
 
+  // Live Mosque Echo Toggle listener
+  if (ui.btnEcho) {
+    ui.btnEcho.addEventListener('click', () => {
+      AppState.speech.liveEchoEnabled = !AppState.speech.liveEchoEnabled;
+      if (AppState.speech.liveEchoEnabled) {
+        ui.btnEcho.style.color = 'var(--accent-primary)';
+        ui.speechResult.textContent = 'تم تفعيل صدى المسجد المباشر! يرجى استخدام سماعات الأذن لتجنب الصفير.';
+        ui.speechResult.classList.add('show');
+        setTimeout(() => ui.speechResult.classList.remove('show'), 4000);
+      } else {
+        ui.btnEcho.style.color = '';
+        ui.speechResult.textContent = 'تم إيقاف صدى المسجد المباشر.';
+        ui.speechResult.classList.add('show');
+        setTimeout(() => ui.speechResult.classList.remove('show'), 2000);
+      }
+    });
+  }
+
   if (ui.btnCloseListening) {
     ui.btnCloseListening.addEventListener('click', () => {
       ui.modalOverlay.style.display = 'none';

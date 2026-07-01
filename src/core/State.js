@@ -45,7 +45,8 @@ const initialState = {
     confidence: 0,
     detectedText: '',
     isProcessing: false,
-    audioBlobBase64: null
+    audioBlobBase64: null,
+    liveEchoEnabled: false
   },
   settings: {
     theme: 'light',
