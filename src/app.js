@@ -272,12 +272,16 @@ const initApp = async () => {
 
   function updateMediaSessionMetadata(ayahNumber) {
     if ('mediaSession' in navigator) {
-      const currentSurah = AppState.current.surah.name || '';
-      const reciterId = AppState.settings.reciter || 'mishary';
+      let currentSurah = AppState.current.surah.name || '';
+      // Clean duplicate "سورة" prefixes from API output if already present
+      if (!currentSurah.startsWith('سورة') && !currentSurah.startsWith('سُورَة')) {
+        currentSurah = `سورة ${currentSurah}`;
+      }
+      const reciterId = AppState.settings.reciter || 'fares';
       const reciterName = reciters.find(r => r.id === reciterId)?.name || 'القارئ';
       
       navigator.mediaSession.metadata = new MediaMetadata({
-        title: `سورة ${currentSurah} - آية ${ayahNumber}`,
+        title: `${currentSurah} - آية ${ayahNumber}`,
         artist: reciterName,
         album: 'محفّظ',
         artwork: [
@@ -285,6 +289,9 @@ const initApp = async () => {
           { src: './icon-512.png', sizes: '512x512', type: 'image/png' }
         ]
       });
+
+      // Synchronize lockscreen active playback state
+      navigator.mediaSession.playbackState = AppState.player.isPlaying ? 'playing' : 'paused';
     }
   }
 
@@ -454,10 +461,16 @@ const initApp = async () => {
   ui.audio.addEventListener('play', () => {
     isTransitioning = false;
     AppState.player.isPlaying = true;
+    if ('mediaSession' in navigator) {
+      navigator.mediaSession.playbackState = 'playing';
+    }
   });
   ui.audio.addEventListener('pause', () => {
     if (isTransitioning) return;
     AppState.player.isPlaying = false;
+    if ('mediaSession' in navigator) {
+      navigator.mediaSession.playbackState = 'paused';
+    }
   });
   ui.audio.addEventListener('ended', () => {
     if (AppState.player.repeatAyah) {
