@@ -719,3 +719,96 @@ input[type="range"] {
   transform: translateX(-50%) translateY(0);
 }
 
+/* Report Card Actions (Teacher Panel) */
+.report-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-light);
+  border-radius: 12px;
+  padding: 16px;
+  margin-bottom: 12px;
+  box-shadow: var(--shadow-sm);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.report-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-family: var(--font-arabic);
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.report-score {
+  background-color: var(--accent-primary-light);
+  color: var(--accent-primary);
+  padding: 4px 8px;
+  border-radius: 12px;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.report-text {
+  font-family: var(--font-arabic);
+  font-size: 0.95rem;
+  color: var(--text-secondary);
+  line-height: 1.5;
+  background-color: var(--bg-page);
+  padding: 8px 12px;
+  border-radius: 8px;
+  border-right: 3px solid var(--accent-primary);
+}
+
+.report-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 6px;
+  border-top: 1px solid var(--border-light);
+  padding-top: 10px;
+  justify-content: flex-end;
+  direction: rtl;
+}
+
+.report-action-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-family: var(--font-arabic);
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  background: var(--bg-page);
+  border: 1px solid var(--border-light);
+  color: var(--text-secondary);
+  text-decoration: none;
+  transition: all 0.2s;
+}
+
+.report-action-btn svg {
+  width: 14px;
+  height: 14px;
+}
+
+.report-action-btn.download-btn:hover {
+  background-color: rgba(16, 185, 129, 0.1);
+  color: #10b981;
+  border-color: #10b981;
+}
+
+.report-action-btn.edit-btn:hover {
+  background-color: rgba(14, 165, 233, 0.1);
+  color: #0ea5e9;
+  border-color: #0ea5e9;
+}
+
+.report-action-btn.delete-btn:hover {
+  background-color: rgba(239, 68, 68, 0.1);
+  color: #ef4444;
+  border-color: #ef4444;
+}
+

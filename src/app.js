@@ -331,6 +331,9 @@ const initApp = async () => {
         currentRecordedBlob = blob;
         ui.btnPlayRecording.disabled = false;
         ui.btnPlayRecording.style.opacity = '1';
+        ui.btnPlayRecording.style.color = '#0ea5e9'; // Blue indicates a saved recording exists
+      } else {
+        ui.btnPlayRecording.style.color = ''; // Default grey
       }
     });
     
@@ -717,9 +720,36 @@ const initApp = async () => {
     currentRecordedBlob = e.detail;
     ui.btnPlayRecording.disabled = false;
     ui.btnPlayRecording.style.opacity = '1';
-    ui.speechResult.textContent = 'تم تسجيل تلاوتك بنجاح! يمكنك الاستماع لتسجيلك بالضغط على زر التشغيل أو إرساله لمعلمك.';
+    ui.btnPlayRecording.style.color = '#0ea5e9'; // Highlight blue as indicator
+    
+    ui.speechResult.textContent = 'تم تسجيل تلاوتك وحفظها وإرسالها للمعلم تلقائياً! ✔️';
     ui.speechResult.classList.add('show');
-    ui.btnSendTeacher.style.display = 'inline-flex';
+    setTimeout(() => ui.speechResult.classList.remove('show'), 3500);
+
+    // Convert Blob to Base64 and automatically add/replace report for teacher
+    const reader = new FileReader();
+    reader.readAsDataURL(currentRecordedBlob);
+    reader.onloadend = () => {
+      const audioBase64 = reader.result;
+      
+      const report = {
+        id: Date.now(),
+        timestamp: Date.now(),
+        surahId: AppState.current.surah.id,
+        surahName: AppState.current.surah.name,
+        ayahNumber: AppState.current.ayah.id,
+        text: AppState.speech.detectedText || 'تم تسجيل الصوت لتسميعه للمعلم',
+        score: AppState.speech.latestScore || 0,
+        audioBase64: audioBase64
+      };
+      
+      // Filter out existing report for same ayah in same surah (replacing old recording)
+      const otherReports = AppState.reports.filter(r => 
+        !(r.surahId === report.surahId && r.ayahNumber === report.ayahNumber)
+      );
+      
+      AppState.reports = [...otherReports, report];
+    };
   });
 
   let currentPlayingSource = null;
@@ -860,13 +890,18 @@ const initApp = async () => {
   function renderTeacherReports() {
     ui.teacherReportsList.innerHTML = '';
     const reports = AppState.reports;
-    if (reports.length === 0) {
-      ui.teacherReportsList.innerHTML = '<p>لا توجد تسميعات بعد.</p>';
+    const currentSurahId = AppState.current.surah.id;
+    
+    // Filter reports by the currently open Surah
+    const filtered = reports.filter(r => r.surahId === currentSurahId);
+    
+    if (filtered.length === 0) {
+      ui.teacherReportsList.innerHTML = '<p style="text-align: center; color: var(--text-secondary); margin: 30px 0; font-family: var(--font-arabic);">لا توجد تسجيلات مرسلة لهذه السورة بعد. ابدأ بالتسجيل لتظهر هنا.</p>';
       return;
     }
     
     // Sort latest first
-    const sorted = [...reports].reverse();
+    const sorted = [...filtered].reverse();
     
     sorted.forEach(report => {
       const card = document.createElement('div');
@@ -881,13 +916,58 @@ const initApp = async () => {
         </div>
         <div class="report-text">${report.text}</div>
         ${audioHtml}
-        <div style="font-size: 0.8rem; color: var(--text-secondary); margin-top: 8px;">
+        <div style="font-size: 0.8rem; color: var(--text-secondary); margin-top: 4px;">
           التاريخ: ${new Date(report.timestamp).toLocaleString()}
+        </div>
+        <div class="report-actions">
+          <a href="${report.audioBase64}" download="سورة_${report.surahName}_آية_${report.ayahNumber}.webm" class="report-action-btn download-btn" title="تنزيل التسجيل">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+            <span>تنزيل</span>
+          </a>
+          <button class="report-action-btn edit-btn" data-ayah="${report.ayahNumber}" title="تعديل التسجيل">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 1 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
+            <span>تعديل</span>
+          </button>
+          <button class="report-action-btn delete-btn" data-ayah="${report.ayahNumber}" data-surah="${report.surahId}" title="حذف التسجيل">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+            <span>حذف</span>
+          </button>
         </div>
       `;
       ui.teacherReportsList.appendChild(card);
     });
   }
+
+  // Register event delegation click listener for report action buttons
+  ui.teacherReportsList.addEventListener('click', (e) => {
+    const targetBtn = e.target.closest('.report-action-btn');
+    if (!targetBtn) return;
+    
+    const ayahNum = parseInt(targetBtn.getAttribute('data-ayah'));
+    
+    if (targetBtn.classList.contains('edit-btn')) {
+      // Edit: Close dashboard, load selected Ayah to allow user to record over it
+      ui.modalOverlay.style.display = 'none';
+      ui.teacherModal.style.display = 'none';
+      AppState.userRole = 'student';
+      loadAyah(ayahNum);
+    } else if (targetBtn.classList.contains('delete-btn')) {
+      const surahId = parseInt(targetBtn.getAttribute('data-surah'));
+      if (confirm("هل أنت متأكد من رغبتك في حذف هذا التسجيل؟")) {
+        DbManager.deleteAudioRecording(surahId, ayahNum).then(() => {
+          AppState.reports = AppState.reports.filter(r => !(r.surahId === surahId && r.ayahNumber === ayahNum));
+          
+          if (AppState.current.surah.id === surahId && AppState.current.ayah.id === ayahNum) {
+            currentRecordedBlob = null;
+            ui.btnPlayRecording.disabled = true;
+            ui.btnPlayRecording.style.opacity = '0.5';
+            ui.btnPlayRecording.style.color = '';
+          }
+          renderTeacherReports();
+        }).catch(err => console.error("حذف التسجيل فشل:", err));
+      }
+    }
+  });
 
   ui.btnSwitchRole.addEventListener('click', () => {
     if (AppState.userRole === 'student') {
@@ -908,27 +988,7 @@ const initApp = async () => {
     ui.teacherModal.style.display = 'none';
   });
   
-  ui.btnSendTeacher.addEventListener('click', () => {
-    const report = {
-      id: Date.now(),
-      timestamp: Date.now(),
-      surahName: AppState.current.surah.name,
-      ayahNumber: AppState.current.ayah.id,
-      text: AppState.speech.detectedText || 'لم يتم قراءة النص',
-      score: AppState.speech.latestScore || 0,
-      audioBase64: AppState.speech.audioBlobBase64
-    };
-    
-    // Push new report
-    const updatedReports = [...AppState.reports, report];
-    AppState.reports = updatedReports;
-    
-    ui.btnSendTeacher.style.display = 'none';
-    ui.speechResult.textContent = 'تم إرسال التسميع للمعلم بنجاح! ✔️';
-    ui.speechResult.classList.add('show');
-    
-    setTimeout(() => ui.speechResult.classList.remove('show'), 3000);
-  });
+
 
   // Interactive Tour
   if (ui.btnTour) {
