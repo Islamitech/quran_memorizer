@@ -106,6 +106,81 @@ const initApp = async () => {
   let repeatSurahId = null;
   let currentPlayingRecording = null;
 
+  // Continuous gapless preloader system
+  let preloadedNextAudio = {
+    surahId: null,
+    ayahNumber: null,
+    url: null,
+    blob: null
+  };
+
+  const preloaderAudio = document.createElement('audio');
+  preloaderAudio.preload = 'auto';
+  preloaderAudio.style.display = 'none';
+  document.body.appendChild(preloaderAudio);
+
+  function preloadNextAyah(currentSurahId, currentAyahNumber) {
+    let nextSurahId = currentSurahId;
+    let nextAyahNumber = parseInt(currentAyahNumber) + 1;
+    
+    // Find metadata for current surah
+    const curSurahData = surahsData.find(s => s.id === currentSurahId);
+    if (!curSurahData) return;
+    
+    // Check if we hit the end of the Surah
+    if (nextAyahNumber > curSurahData.ayahCount) {
+      if (document.body.classList.contains('theme-listening')) {
+        // If looping specific Surah is enabled
+        if (repeatSurahId && repeatSurahId == currentSurahId) {
+          nextAyahNumber = 1;
+        } else {
+          // Find next Surah in playlist
+          const nextIndex = currentPlaylistIndex + 1;
+          if (nextIndex < listeningPlaylist.length) {
+            nextSurahId = listeningPlaylist[nextIndex];
+            nextAyahNumber = 1;
+          } else {
+            return; // end of playlist
+          }
+        }
+      } else {
+        return; // regular mode, end of surah
+      }
+    }
+    
+    const reciter = AppState.settings.reciter || 'fares';
+    
+    // Asynchronously resolve next audio to preloaderAudio
+    DbManager.getOfflineAudio(reciter, nextSurahId, nextAyahNumber).then(blob => {
+      if (blob) {
+        if (preloadedNextAudio.url && preloadedNextAudio.url.startsWith('blob:')) {
+          URL.revokeObjectURL(preloadedNextAudio.url);
+        }
+        preloadedNextAudio = {
+          surahId: nextSurahId,
+          ayahNumber: nextAyahNumber,
+          url: URL.createObjectURL(blob),
+          blob: blob
+        };
+        preloaderAudio.src = preloadedNextAudio.url;
+        preloaderAudio.load();
+      } else {
+        const netUrl = quranAPI.generateAudioUrl(nextSurahId, nextAyahNumber, reciter);
+        if (preloadedNextAudio.url && preloadedNextAudio.url.startsWith('blob:')) {
+          URL.revokeObjectURL(preloadedNextAudio.url);
+        }
+        preloadedNextAudio = {
+          surahId: nextSurahId,
+          ayahNumber: nextAyahNumber,
+          url: netUrl,
+          blob: null
+        };
+        preloaderAudio.src = netUrl;
+        preloaderAudio.load();
+      }
+    }).catch(e => console.warn("Background gapless preloading failed:", e));
+  }
+
   // Initialize live echo state from UI checkbox
   if (ui.chkLiveEcho) {
     AppState.speech.liveEchoEnabled = ui.chkLiveEcho.checked;
@@ -294,37 +369,50 @@ const initApp = async () => {
     ui.quranDisplay.appendChild(marker);
 
     // Update Audio (Offline caching first)
-    const reciter = AppState.settings.reciter || 'mishary';
+    const reciter = AppState.settings.reciter || 'fares';
     const surahId = AppState.current.surah.id;
     
-    DbManager.getOfflineAudio(reciter, surahId, ayahNumber).then(cachedBlob => {
-      if (cachedBlob) {
-        const localUrl = URL.createObjectURL(cachedBlob);
-        ui.audio.src = localUrl;
-        playAudio();
-      } else {
-        const netUrl = quranAPI.generateAudioUrl(surahId, ayahNumber, reciter);
-        if (navigator.onLine) {
-          ui.audio.src = netUrl;
+    // Check if preloaded URL is ready for this ayah!
+    if (preloadedNextAudio.surahId === surahId && preloadedNextAudio.ayahNumber === ayahNumber && preloadedNextAudio.url) {
+      ui.audio.src = preloadedNextAudio.url;
+      playAudio();
+      
+      // Start preloading the NEXT ayah immediately in the background!
+      preloadNextAyah(surahId, ayahNumber);
+    } else {
+      // Fallback: load asynchronously if not preloaded (e.g. manual click)
+      DbManager.getOfflineAudio(reciter, surahId, ayahNumber).then(cachedBlob => {
+        if (cachedBlob) {
+          const localUrl = URL.createObjectURL(cachedBlob);
+          ui.audio.src = localUrl;
           playAudio();
-          
-          // Download in background for offline use
-          fetch(netUrl)
-            .then(res => {
-              if (res.ok) return res.blob();
-              throw new Error("Fetch failed");
-            })
-            .then(blob => {
-              DbManager.saveOfflineAudio(reciter, surahId, ayahNumber, blob);
-            })
-            .catch(err => console.warn("Background audio cache failed:", err));
         } else {
-          ui.audio.src = '';
-          AppState.player.isPlaying = false;
-          checkOfflineStatusAndAlert();
+          const netUrl = quranAPI.generateAudioUrl(surahId, ayahNumber, reciter);
+          if (navigator.onLine) {
+            ui.audio.src = netUrl;
+            playAudio();
+            
+            // Download in background for offline use
+            fetch(netUrl)
+              .then(res => {
+                if (res.ok) return res.blob();
+                throw new Error("Fetch failed");
+              })
+              .then(blob => {
+                DbManager.saveOfflineAudio(reciter, surahId, ayahNumber, blob);
+              })
+              .catch(err => console.warn("Background audio cache failed:", err));
+          } else {
+            ui.audio.src = '';
+            AppState.player.isPlaying = false;
+            checkOfflineStatusAndAlert();
+          }
         }
-      }
-    });
+        
+        // Start preloading the NEXT ayah immediately in the background!
+        preloadNextAyah(surahId, ayahNumber);
+      });
+    }
 
     function playAudio() {
       ui.audio.volume = 1.0;
@@ -379,33 +467,37 @@ const initApp = async () => {
     } else {
       // Next ayah
       const next = parseInt(AppState.current.ayah.id) + 1;
-      if(next <= AppState.current.surah.ayahCount) {
-          loadAyah(next);
-          ui.audio.play();
+      if (next <= AppState.current.surah.ayahCount) {
+        loadAyah(next);
+        // Play next verse (if not preloaded already playing)
+        ui.audio.play().catch(e => {});
       } else {
-          // If we are in listening mode, check if we go to next surah
-          if (document.body.classList.contains('theme-listening')) {
-            // Check if we should repeat this specific surah
-            if (repeatSurahId && repeatSurahId == AppState.current.surah.id) {
-              loadSurah(AppState.current.surah.id).then(() => {
+        // If we are in listening mode, check if we go to next surah
+        if (document.body.classList.contains('theme-listening')) {
+          // Check if we should repeat this specific surah
+          if (repeatSurahId && repeatSurahId == AppState.current.surah.id) {
+            loadSurah(AppState.current.surah.id).then(() => {
+              AppState.player.isPlaying = true;
+              ui.audio.play().catch(e => {});
+            });
+          } else {
+            // Next surah in playlist
+            currentPlaylistIndex++;
+            if (currentPlaylistIndex < listeningPlaylist.length) {
+              loadSurah(listeningPlaylist[currentPlaylistIndex]).then(() => {
+                AppState.player.isPlaying = true;
                 ui.audio.play().catch(e => {});
               });
             } else {
-              // Next surah in playlist
-              currentPlaylistIndex++;
-              if (currentPlaylistIndex < listeningPlaylist.length) {
-                loadSurah(listeningPlaylist[currentPlaylistIndex]).then(() => {
-                  ui.audio.play().catch(e => {});
-                });
-              } else {
-                // End of playlist
-                AppState.player.isPlaying = false;
-                document.body.classList.remove('theme-listening');
-              }
+              // End of playlist
+              AppState.player.isPlaying = false;
+              document.body.classList.remove('theme-listening');
+              ui.btnListening.style.color = '';
             }
-          } else {
-            AppState.player.isPlaying = false;
           }
+        } else {
+          AppState.player.isPlaying = false;
+        }
       }
     }
   });
