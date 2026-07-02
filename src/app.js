@@ -154,9 +154,6 @@ const initApp = async () => {
     // Asynchronously resolve next audio to preloaderAudio
     DbManager.getOfflineAudio(reciter, nextSurahId, nextAyahNumber).then(blob => {
       if (blob) {
-        if (preloadedNextAudio.url && preloadedNextAudio.url.startsWith('blob:')) {
-          URL.revokeObjectURL(preloadedNextAudio.url);
-        }
         preloadedNextAudio = {
           surahId: nextSurahId,
           ayahNumber: nextAyahNumber,
@@ -167,9 +164,6 @@ const initApp = async () => {
         preloaderAudio.load();
       } else {
         const netUrl = quranAPI.generateAudioUrl(nextSurahId, nextAyahNumber, reciter);
-        if (preloadedNextAudio.url && preloadedNextAudio.url.startsWith('blob:')) {
-          URL.revokeObjectURL(preloadedNextAudio.url);
-        }
         preloadedNextAudio = {
           surahId: nextSurahId,
           ayahNumber: nextAyahNumber,
