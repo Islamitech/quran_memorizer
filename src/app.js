@@ -458,19 +458,34 @@ const initApp = async () => {
   });
 
   // Audio events
+  // Audio events and OS lockscreen state synchronization
+  const syncPlaybackState = () => {
+    if ('mediaSession' in navigator) {
+      navigator.mediaSession.playbackState = AppState.player.isPlaying ? 'playing' : 'paused';
+    }
+  };
+
   ui.audio.addEventListener('play', () => {
     isTransitioning = false;
     AppState.player.isPlaying = true;
-    if ('mediaSession' in navigator) {
-      navigator.mediaSession.playbackState = 'playing';
-    }
+    syncPlaybackState();
+    setTimeout(syncPlaybackState, 100);
+    setTimeout(syncPlaybackState, 300);
   });
+
+  ui.audio.addEventListener('playing', () => {
+    isTransitioning = false;
+    AppState.player.isPlaying = true;
+    syncPlaybackState();
+    setTimeout(syncPlaybackState, 100);
+    setTimeout(syncPlaybackState, 300);
+  });
+
   ui.audio.addEventListener('pause', () => {
     if (isTransitioning) return;
     AppState.player.isPlaying = false;
-    if ('mediaSession' in navigator) {
-      navigator.mediaSession.playbackState = 'paused';
-    }
+    syncPlaybackState();
+    setTimeout(syncPlaybackState, 100);
   });
   ui.audio.addEventListener('ended', () => {
     if (AppState.player.repeatAyah) {
