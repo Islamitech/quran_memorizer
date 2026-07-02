@@ -75,14 +75,16 @@
           <select id="reciter-select" aria-label="اختر القارئ"></select>
           <svg class="select-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"></polyline></svg>
         </div>
-        <div class="custom-select-wrapper">
-          <input type="text" id="surah-input" list="surah-list" placeholder="ابحث عن سورة..." aria-label="ابحث عن سورة">
-          <datalist id="surah-list"></datalist>
-          <svg class="select-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
-        </div>
-        <div class="custom-select-wrapper">
-          <select id="ayah-select" aria-label="اختر الآية"></select>
-          <svg class="select-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"></polyline></svg>
+        <div class="selectors-sub-row">
+          <div class="custom-select-wrapper" style="flex: 2;">
+            <input type="text" id="surah-input" list="surah-list" placeholder="ابحث عن سورة..." aria-label="ابحث عن سورة">
+            <datalist id="surah-list"></datalist>
+            <svg class="select-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+          </div>
+          <div class="custom-select-wrapper" style="flex: 1;">
+            <select id="ayah-select" aria-label="اختر الآية"></select>
+            <svg class="select-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"></polyline></svg>
+          </div>
         </div>
       </section>
 

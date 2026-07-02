@@ -24,7 +24,15 @@
 /* Selectors */
 .selectors-card {
   display: flex;
-  gap: 16px;
+  flex-direction: column;
+  gap: 10px;
+  width: 100%;
+}
+
+.selectors-sub-row {
+  display: flex;
+  gap: 10px;
+  width: 100%;
 }
 
 .custom-select-wrapper {
@@ -113,17 +121,14 @@ select:focus {
 
 /* Bottom Navigation */
 .bottom-nav {
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  width: 100%;
   background-color: var(--bg-card);
   border-top: 1px solid var(--border-light);
-  padding: 16px 24px 24px;
+  padding: 12px 24px 20px;
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 12px;
   box-shadow: 0 -4px 12px rgba(0,0,0,0.03);
+  z-index: 100;
 }
 
 /* Timeline */
@@ -400,27 +405,54 @@ input[type="range"] {
   outline: none;
 }
 
-/* Mobile responsive styles for bottom navigation controls */
+/* Mobile responsive styles for bottom navigation controls and layout elements */
 @media (max-width: 600px) {
+  .app-main {
+    padding: 12px !important;
+    gap: 12px !important;
+  }
+  .selectors-card {
+    gap: 8px !important;
+    padding: 12px !important;
+    border-radius: 12px !important;
+  }
+  .selectors-sub-row {
+    gap: 8px !important;
+  }
+  .quran-card {
+    padding: 16px !important;
+    border-radius: 12px !important;
+  }
+  .ayah-container {
+    font-size: clamp(1.7rem, 6.2vw, 2.4rem) !important;
+    line-height: 1.9 !important;
+  }
+  .basmalah-container {
+    font-size: 1.7rem !important;
+    margin-bottom: 16px !important;
+    padding-bottom: 12px !important;
+  }
   .bottom-nav {
-    padding: 12px 16px 16px;
+    padding: 12px 16px 16px !important;
   }
   .nav-controls {
-    flex-direction: column;
-    gap: 12px;
-    align-items: center;
+    flex-direction: column !important;
+    gap: 10px !important;
+    align-items: center !important;
   }
   .player-buttons {
-    width: 100%;
-    justify-content: center;
-    gap: 20px;
+    width: 100% !important;
+    justify-content: center !important;
+    gap: 20px !important;
   }
   .view-toggles {
-    width: 100%;
-    justify-content: center;
+    width: 100% !important;
+    justify-content: center !important;
+    gap: 6px !important;
   }
   .mic-control-group {
-    width: 100%;
-    justify-content: center;
+    width: 100% !important;
+    justify-content: center !important;
+    gap: 10px !important;
   }
 }

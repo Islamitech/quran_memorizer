@@ -157,11 +157,10 @@ select:focus, input[list]:focus {
   flex: 1;
   display: flex;
   flex-direction: column;
-  padding: 24px;
-  gap: 20px;
+  padding: 16px;
+  gap: 16px;
   overflow-y: auto;
   overflow-x: hidden;
-  padding-bottom: 120px; /* Space for bottom nav */
 }
 
 /* Scrollbar */
@@ -254,7 +253,6 @@ body.theme-listening #btn-child-mode {
 }
 
 body.theme-listening .quran-card {
-  min-height: 65vh;
   border: none;
   box-shadow: none;
   background: transparent;
@@ -282,7 +280,7 @@ body.recitation-playing .player-buttons {
 }
 
 body.recitation-playing .quran-card {
-  min-height: 55vh;
+  border: none;
 }
 
 /* Switch & Slider Styles */
