@@ -131,8 +131,54 @@ export class SpeechEngine {
         console.warn("Recognition start issue:", recError);
       }
       
+      // Determine recording stream: apply echo effect if enabled
+      let recordingStream = this.activeStream;
+      
+      if (AppState.speech.liveEchoEnabled) {
+        try {
+          const AudioCtx = window.AudioContext || window.webkitAudioContext;
+          this.liveEchoCtx = new AudioCtx();
+          this.liveEchoSource = this.liveEchoCtx.createMediaStreamSource(this.activeStream);
+          
+          const dryNode = this.liveEchoCtx.createGain();
+          const wetNode = this.liveEchoCtx.createGain();
+          const delay1 = this.liveEchoCtx.createDelay(1.0);
+          const delay2 = this.liveEchoCtx.createDelay(1.0);
+          const feedback1 = this.liveEchoCtx.createGain();
+          const feedback2 = this.liveEchoCtx.createGain();
+          
+          delay1.delayTime.value = 0.18;
+          delay2.delayTime.value = 0.28;
+          feedback1.gain.value = 0.18;
+          feedback2.gain.value = 0.15;
+          dryNode.gain.value = 1.0;
+          wetNode.gain.value = 0.18;
+          
+          delay1.connect(feedback1);
+          feedback1.connect(delay1);
+          delay2.connect(feedback2);
+          feedback2.connect(delay2);
+          
+          // Create a destination stream to capture the processed audio
+          const dest = this.liveEchoCtx.createMediaStreamDestination();
+          
+          this.liveEchoSource.connect(dryNode);
+          dryNode.connect(dest);
+          this.liveEchoSource.connect(delay1);
+          this.liveEchoSource.connect(delay2);
+          delay1.connect(wetNode);
+          delay2.connect(wetNode);
+          wetNode.connect(dest);
+          
+          recordingStream = dest.stream;
+        } catch(echoErr) {
+          console.warn("Echo setup failed, recording raw:", echoErr);
+          recordingStream = this.activeStream;
+        }
+      }
+      
       // Create new MediaRecorder for this ayah segment
-      this.mediaRecorder = new MediaRecorder(this.activeStream);
+      this.mediaRecorder = new MediaRecorder(recordingStream);
       this.audioChunks = [];
       
       this.mediaRecorder.ondataavailable = e => {
