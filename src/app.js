@@ -468,26 +468,21 @@ const initApp = async () => {
       // Next ayah
       const next = parseInt(AppState.current.ayah.id) + 1;
       if (next <= AppState.current.surah.ayahCount) {
+        AppState.player.isPlaying = true;
         loadAyah(next);
-        // Play next verse (if not preloaded already playing)
-        ui.audio.play().catch(e => {});
       } else {
         // If we are in listening mode, check if we go to next surah
         if (document.body.classList.contains('theme-listening')) {
           // Check if we should repeat this specific surah
           if (repeatSurahId && repeatSurahId == AppState.current.surah.id) {
-            loadSurah(AppState.current.surah.id).then(() => {
-              AppState.player.isPlaying = true;
-              ui.audio.play().catch(e => {});
-            });
+            AppState.player.isPlaying = true;
+            loadSurah(AppState.current.surah.id).catch(e => {});
           } else {
             // Next surah in playlist
             currentPlaylistIndex++;
             if (currentPlaylistIndex < listeningPlaylist.length) {
-              loadSurah(listeningPlaylist[currentPlaylistIndex]).then(() => {
-                AppState.player.isPlaying = true;
-                ui.audio.play().catch(e => {});
-              });
+              AppState.player.isPlaying = true;
+              loadSurah(listeningPlaylist[currentPlaylistIndex]).catch(e => {});
             } else {
               // End of playlist
               AppState.player.isPlaying = false;
