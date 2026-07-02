@@ -439,7 +439,7 @@ const initApp = async () => {
       
       // Play automatically if playing state is true
       if (AppState.player.isPlaying) {
-        if (AppState.speech.isListening) speechEngine.stop(); // Prevent overlap
+        if (speechEngine.isRecording) speechEngine.stop(); // Prevent overlap
         ui.audio.play().catch(e => { AppState.player.isPlaying = false; });
       }
     }
@@ -447,7 +447,7 @@ const initApp = async () => {
 
   observer.subscribe('isPlaying', (val) => {
     if(val) {
-      if (AppState.speech.isListening) speechEngine.stop(); // Stop mic if audio plays
+      if (speechEngine.isRecording) speechEngine.stop(); // Stop mic if audio plays
       ui.iconPlay.style.display = 'none';
       ui.iconPause.style.display = 'block';
       document.body.classList.add('recitation-playing');
@@ -562,7 +562,7 @@ const initApp = async () => {
       ui.audio.pause();
       AppState.player.isPlaying = false;
     } else {
-      if (AppState.speech.isListening) speechEngine.stop();
+      if (speechEngine.isRecording) speechEngine.stop();
       ui.audio.volume = 1.0;
       ui.audio.muted = false;
       ui.audio.play().catch(e => {
@@ -592,9 +592,8 @@ const initApp = async () => {
   }
 
   function transitionToAyahWithRecording(targetAyah) {
-    const wasListening = AppState.speech.isListening;
-    if (wasListening) {
-      // Pass true to tell SpeechEngine to restart automatically once current recognition ends
+    if (speechEngine.isRecording) {
+      // Stop current recording, save it, and restart for the next ayah
       speechEngine.stop(true);
       
       // Update UI immediately to show recording will continue
@@ -611,7 +610,7 @@ const initApp = async () => {
     const next = parseInt(AppState.current.ayah.id) + 1;
     if (next <= AppState.current.surah.ayahCount) {
       isTransitioning = true;
-      if (AppState.speech.isListening) {
+      if (speechEngine.isRecording) {
         transitionToAyahWithRecording(next);
       } else {
         if (AppState.player.isPlaying) {
@@ -626,7 +625,7 @@ const initApp = async () => {
     const prev = parseInt(AppState.current.ayah.id) - 1;
     if (prev > 0) {
       isTransitioning = true;
-      if (AppState.speech.isListening) {
+      if (speechEngine.isRecording) {
         transitionToAyahWithRecording(prev);
       } else {
         if (AppState.player.isPlaying) {
@@ -728,7 +727,7 @@ const initApp = async () => {
 
   // Speech listeners
   ui.micBtn.addEventListener('click', () => {
-    if(AppState.speech.isListening) {
+    if(speechEngine.isRecording) {
       speechEngine.stop();
     } else {
       if (AppState.player.isPlaying) AppState.player.isPlaying = false; // Stop reciter audio
@@ -736,7 +735,6 @@ const initApp = async () => {
       ui.btnPlayRecording.style.opacity = '0.5';
       ui.speechResult.textContent = 'جاري تسجيل تلاوتك الآن...';
       ui.speechResult.classList.add('show');
-      ui.btnSendTeacher.style.display = 'none';
       speechEngine.start();
     }
   });
@@ -900,9 +898,8 @@ const initApp = async () => {
   });
 
   window.addEventListener('speechend', (e) => {
-    if (AppState.speech.isListening) {
-      AppState.speech.isListening = false;
-    }
+    // speechend is dispatched by SpeechEngine when recording fully stops
+    ui.speechResult.classList.remove('show');
   });
 
   // Tour setup
@@ -1236,7 +1233,7 @@ const initApp = async () => {
       const prev = parseInt(AppState.current.ayah.id) - 1;
       if (prev >= 1) {
         isTransitioning = true;
-        if (AppState.speech.isListening) {
+        if (speechEngine.isRecording) {
           transitionToAyahWithRecording(prev);
         } else {
           loadAyah(prev);
@@ -1247,7 +1244,7 @@ const initApp = async () => {
       const next = parseInt(AppState.current.ayah.id) + 1;
       if (next <= AppState.current.surah.ayahCount) {
         isTransitioning = true;
-        if (AppState.speech.isListening) {
+        if (speechEngine.isRecording) {
           transitionToAyahWithRecording(next);
         } else {
           loadAyah(next);

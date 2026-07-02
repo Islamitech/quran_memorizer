@@ -11,7 +11,14 @@ export class SpeechEngine {
     this.matchAlgo = new MatchAlgorithm();
     this.liveEchoCtx = null;
     this.liveEchoSource = null;
-    this.shouldRestart = false;
+    
+    // Internal state tracking
+    this.isRecording = false;       // TRUE while mic is active (independent of speech recognition)
+    this.activeStream = null;       // The live microphone stream - reused across ayah transitions
+    this.pendingRestart = false;    // Flag: should we restart recording for the next ayah?
+    this.currentRecordingSurah = null;
+    this.currentRecordingAyah = null;
+    
     this.init();
   }
   
@@ -36,24 +43,31 @@ export class SpeechEngine {
       alert('عذراً، متصفحك لا يدعم خاصية التعرف على الصوت. يرجى استخدام Google Chrome.');
       return;
     }
-    if (AppState.speech.isListening) return;
+    // Prevent double-start
+    if (this.isRecording) return;
     
     try {
-      AppState.speech.isListening = true; // Set UI to listening immediately
+      this.isRecording = true;
+      AppState.speech.isListening = true;
       
-      // Capture current IDs to avoid race condition when transition triggers during stop
+      // Capture which surah/ayah we are recording for
       this.currentRecordingSurah = AppState.current.surah.id;
       this.currentRecordingAyah = AppState.current.ayah.id;
       
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      // Get microphone stream (or reuse existing one)
+      if (!this.activeStream || this.activeStream.getTracks().every(t => t.readyState === 'ended')) {
+        this.activeStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      }
       
+      // Start speech recognition (may fail if already running - that's ok)
       try {
         this.recognition.start();
       } catch(recError) {
-        console.warn("Recognition already started or failed:", recError);
+        console.warn("Recognition start issue:", recError);
       }
       
-      this.mediaRecorder = new MediaRecorder(stream);
+      // Create new MediaRecorder for this ayah segment
+      this.mediaRecorder = new MediaRecorder(this.activeStream);
       this.audioChunks = [];
       
       this.mediaRecorder.ondataavailable = e => {
@@ -65,45 +79,90 @@ export class SpeechEngine {
         const recordedSurah = this.currentRecordingSurah;
         const recordedAyah = this.currentRecordingAyah;
         
-        DbManager.saveAudioRecording(recordedSurah, recordedAyah, audioBlob)
-          .then(() => {
-            window.dispatchEvent(new CustomEvent('recordingready', { 
-              detail: {
-                blob: audioBlob,
-                surahId: recordedSurah,
-                ayahId: recordedAyah
-              }
-            }));
-          })
-          .catch(err => console.error("Failed to save audio recording:", err));
+        // Only save if we actually captured audio data
+        if (audioBlob.size > 0) {
+          DbManager.saveAudioRecording(recordedSurah, recordedAyah, audioBlob)
+            .then(() => {
+              window.dispatchEvent(new CustomEvent('recordingready', { 
+                detail: {
+                  blob: audioBlob,
+                  surahId: recordedSurah,
+                  ayahId: recordedAyah
+                }
+              }));
+            })
+            .catch(err => console.error("Failed to save audio recording:", err));
 
-        const reader = new FileReader();
-        reader.readAsDataURL(audioBlob);
-        reader.onloadend = () => {
-          AppState.speech.audioBlobBase64 = reader.result;
-        };
-        // Stop stream tracks
-        stream.getTracks().forEach(track => track.stop());
+          const reader = new FileReader();
+          reader.readAsDataURL(audioBlob);
+          reader.onloadend = () => {
+            AppState.speech.audioBlobBase64 = reader.result;
+          };
+        }
+        
+        // If pendingRestart is set, start a new recording segment for the next ayah
+        if (this.pendingRestart) {
+          this.pendingRestart = false;
+          this.isRecording = false; // Allow start() to run
+          // Use setTimeout to let the browser finish cleanup
+          setTimeout(() => {
+            this.start();
+          }, 100);
+        } else {
+          // Fully stop: release mic stream
+          this.isRecording = false;
+          if (this.activeStream) {
+            this.activeStream.getTracks().forEach(track => track.stop());
+            this.activeStream = null;
+          }
+          AppState.speech.isListening = false;
+          window.dispatchEvent(new Event('speechend'));
+        }
       };
       
       this.mediaRecorder.start();
     } catch(e) {
       console.error(e);
+      this.isRecording = false;
       AppState.speech.isListening = false;
       alert('حدث خطأ في الوصول للميكروفون. يرجى التأكد من إعطاء الصلاحية للمتصفح. ' + (e.message || ''));
     }
   }
 
-  stop(shouldRestart = false) {
-    if(!this.isSupported) return;
-    this.shouldRestart = shouldRestart;
+  /**
+   * Stop current recording.
+   * @param {boolean} restartForNextAyah - If true, automatically starts a new recording after saving.
+   */
+  stop(restartForNextAyah = false) {
+    if (!this.isSupported) return;
+    if (!this.isRecording) return;
+    
+    this.pendingRestart = restartForNextAyah;
+    
+    // Stop speech recognition (may fire handleEnd - we ignore it)
     try {
       this.recognition.stop();
-      if(this.mediaRecorder && this.mediaRecorder.state !== 'inactive') {
-        this.mediaRecorder.stop();
-      }
     } catch(e) {}
-    AppState.speech.isListening = false;
+    
+    // Stop MediaRecorder - this triggers onstop which handles saving + restart
+    if (this.mediaRecorder && this.mediaRecorder.state !== 'inactive') {
+      this.mediaRecorder.stop();
+    } else {
+      // MediaRecorder wasn't active, handle cleanup manually
+      if (restartForNextAyah) {
+        this.pendingRestart = false;
+        this.isRecording = false;
+        setTimeout(() => this.start(), 100);
+      } else {
+        this.isRecording = false;
+        if (this.activeStream) {
+          this.activeStream.getTracks().forEach(track => track.stop());
+          this.activeStream = null;
+        }
+        AppState.speech.isListening = false;
+        window.dispatchEvent(new Event('speechend'));
+      }
+    }
   }
   
   handleResults(event) {
@@ -133,18 +192,21 @@ export class SpeechEngine {
 
   handleError(event) {
     console.error("Speech recognition error", event.error);
-    window.dispatchEvent(new CustomEvent('speecherror', { detail: event.error }));
+    // Don't dispatch error for 'aborted' - that's normal during stop
+    if (event.error !== 'aborted') {
+      window.dispatchEvent(new CustomEvent('speecherror', { detail: event.error }));
+    }
   }
 
   handleEnd() {
-    if (this.shouldRestart) {
-      this.shouldRestart = false;
-      setTimeout(() => {
-        this.start();
-      }, 50);
-    } else {
-      AppState.speech.isListening = false;
-      window.dispatchEvent(new Event('speechend'));
+    // Speech recognition ended (browser auto-stops on iOS sometimes).
+    // If we're still actively recording, restart recognition silently.
+    if (this.isRecording) {
+      try {
+        this.recognition.start();
+      } catch(e) {
+        // Ignore - recognition may have been stopped intentionally
+      }
     }
   }
 }
