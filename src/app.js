@@ -48,6 +48,12 @@ const initApp = async () => {
     Object.assign(AppState.current, savedState.current || {});
     Object.assign(AppState.memorization, savedState.memorization || {});
     Object.assign(AppState.settings, savedState.settings || {});
+    if (savedState.reports) {
+      AppState.reports = savedState.reports;
+    }
+    if (savedState.userRole) {
+      AppState.userRole = savedState.userRole;
+    }
   }
 
   const ui = {
@@ -588,21 +594,17 @@ const initApp = async () => {
   function transitionToAyahWithRecording(targetAyah) {
     const wasListening = AppState.speech.isListening;
     if (wasListening) {
-      speechEngine.stop();
+      // Pass true to tell SpeechEngine to restart automatically once current recognition ends
+      speechEngine.stop(true);
+      
+      // Update UI immediately to show recording will continue
+      ui.btnPlayRecording.disabled = true;
+      ui.btnPlayRecording.style.opacity = '0.5';
+      ui.speechResult.textContent = 'جاري تسجيل تلاوتك للآية التالية تلقائياً...';
+      ui.speechResult.classList.add('show');
     }
     
     loadAyah(targetAyah);
-    
-    if (wasListening) {
-      setTimeout(() => {
-        if (AppState.player.isPlaying) AppState.player.isPlaying = false;
-        ui.btnPlayRecording.disabled = true;
-        ui.btnPlayRecording.style.opacity = '0.5';
-        ui.speechResult.textContent = 'جاري تسجيل تلاوتك للآية التالية تلقائياً...';
-        ui.speechResult.classList.add('show');
-        speechEngine.start();
-      }, 300);
-    }
   }
 
   ui.nextBtn.addEventListener('click', () => {

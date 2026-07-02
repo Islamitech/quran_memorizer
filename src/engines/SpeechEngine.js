@@ -11,6 +11,7 @@ export class SpeechEngine {
     this.matchAlgo = new MatchAlgorithm();
     this.liveEchoCtx = null;
     this.liveEchoSource = null;
+    this.shouldRestart = false;
     this.init();
   }
   
@@ -93,8 +94,9 @@ export class SpeechEngine {
     }
   }
 
-  stop() {
+  stop(shouldRestart = false) {
     if(!this.isSupported) return;
+    this.shouldRestart = shouldRestart;
     try {
       this.recognition.stop();
       if(this.mediaRecorder && this.mediaRecorder.state !== 'inactive') {
@@ -135,7 +137,14 @@ export class SpeechEngine {
   }
 
   handleEnd() {
-    AppState.speech.isListening = false;
-    window.dispatchEvent(new Event('speechend'));
+    if (this.shouldRestart) {
+      this.shouldRestart = false;
+      setTimeout(() => {
+        this.start();
+      }, 50);
+    } else {
+      AppState.speech.isListening = false;
+      window.dispatchEvent(new Event('speechend'));
+    }
   }
 }
