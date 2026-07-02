@@ -105,6 +105,7 @@ const initApp = async () => {
   let currentPlaylistIndex = 0;
   let repeatSurahId = null;
   let currentPlayingRecording = null;
+  let isTransitioning = false;
 
   // Continuous gapless preloader system
   let preloadedNextAudio = {
@@ -458,8 +459,14 @@ const initApp = async () => {
   });
 
   // Audio events
-  ui.audio.addEventListener('play', () => AppState.player.isPlaying = true);
-  ui.audio.addEventListener('pause', () => AppState.player.isPlaying = false);
+  ui.audio.addEventListener('play', () => {
+    isTransitioning = false;
+    AppState.player.isPlaying = true;
+  });
+  ui.audio.addEventListener('pause', () => {
+    if (isTransitioning) return;
+    AppState.player.isPlaying = false;
+  });
   ui.audio.addEventListener('ended', () => {
     if (AppState.player.repeatAyah) {
       ui.audio.currentTime = 0;
@@ -468,6 +475,7 @@ const initApp = async () => {
       // Next ayah
       const next = parseInt(AppState.current.ayah.id) + 1;
       if (next <= AppState.current.surah.ayahCount) {
+        isTransitioning = true;
         AppState.player.isPlaying = true;
         loadAyah(next);
       } else {
@@ -475,12 +483,14 @@ const initApp = async () => {
         if (document.body.classList.contains('theme-listening')) {
           // Check if we should repeat this specific surah
           if (repeatSurahId && repeatSurahId == AppState.current.surah.id) {
+            isTransitioning = true;
             AppState.player.isPlaying = true;
             loadSurah(AppState.current.surah.id).catch(e => {});
           } else {
             // Next surah in playlist
             currentPlaylistIndex++;
             if (currentPlaylistIndex < listeningPlaylist.length) {
+              isTransitioning = true;
               AppState.player.isPlaying = true;
               loadSurah(listeningPlaylist[currentPlaylistIndex]).catch(e => {});
             } else {
@@ -549,12 +559,24 @@ const initApp = async () => {
 
   ui.nextBtn.addEventListener('click', () => {
     const next = parseInt(AppState.current.ayah.id) + 1;
-    if(next <= AppState.current.surah.ayahCount) loadAyah(next);
+    if (next <= AppState.current.surah.ayahCount) {
+      isTransitioning = true;
+      if (AppState.player.isPlaying) {
+        AppState.player.isPlaying = true;
+      }
+      loadAyah(next);
+    }
   });
 
   ui.prevBtn.addEventListener('click', () => {
     const prev = parseInt(AppState.current.ayah.id) - 1;
-    if(prev > 0) loadAyah(prev);
+    if (prev > 0) {
+      isTransitioning = true;
+      if (AppState.player.isPlaying) {
+        AppState.player.isPlaying = true;
+      }
+      loadAyah(prev);
+    }
   });
 
   // Render custom autocomplete suggestions for Surahs
