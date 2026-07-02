@@ -399,3 +399,28 @@ input[type="range"] {
   height: 36px;
   outline: none;
 }
+
+/* Mobile responsive styles for bottom navigation controls */
+@media (max-width: 600px) {
+  .bottom-nav {
+    padding: 12px 16px 16px;
+  }
+  .nav-controls {
+    flex-direction: column;
+    gap: 12px;
+    align-items: center;
+  }
+  .player-buttons {
+    width: 100%;
+    justify-content: center;
+    gap: 20px;
+  }
+  .view-toggles {
+    width: 100%;
+    justify-content: center;
+  }
+  .mic-control-group {
+    width: 100%;
+    justify-content: center;
+  }
+}
