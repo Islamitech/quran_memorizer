@@ -40,6 +40,10 @@ export class SpeechEngine {
     try {
       AppState.speech.isListening = true; // Set UI to listening immediately
       
+      // Capture current IDs to avoid race condition when transition triggers during stop
+      this.currentRecordingSurah = AppState.current.surah.id;
+      this.currentRecordingAyah = AppState.current.ayah.id;
+      
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       
       try {
@@ -57,10 +61,18 @@ export class SpeechEngine {
       
       this.mediaRecorder.onstop = () => {
         const audioBlob = new Blob(this.audioChunks, { type: 'audio/webm' });
+        const recordedSurah = this.currentRecordingSurah;
+        const recordedAyah = this.currentRecordingAyah;
         
-        DbManager.saveAudioRecording(AppState.current.surah.id, AppState.current.ayah.id, audioBlob)
+        DbManager.saveAudioRecording(recordedSurah, recordedAyah, audioBlob)
           .then(() => {
-            window.dispatchEvent(new CustomEvent('recordingready', { detail: audioBlob }));
+            window.dispatchEvent(new CustomEvent('recordingready', { 
+              detail: {
+                blob: audioBlob,
+                surahId: recordedSurah,
+                ayahId: recordedAyah
+              }
+            }));
           })
           .catch(err => console.error("Failed to save audio recording:", err));
 

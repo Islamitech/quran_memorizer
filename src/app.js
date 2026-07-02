@@ -585,14 +585,38 @@ const initApp = async () => {
     });
   }
 
+  function transitionToAyahWithRecording(targetAyah) {
+    const wasListening = AppState.speech.isListening;
+    if (wasListening) {
+      speechEngine.stop();
+    }
+    
+    loadAyah(targetAyah);
+    
+    if (wasListening) {
+      setTimeout(() => {
+        if (AppState.player.isPlaying) AppState.player.isPlaying = false;
+        ui.btnPlayRecording.disabled = true;
+        ui.btnPlayRecording.style.opacity = '0.5';
+        ui.speechResult.textContent = 'جاري تسجيل تلاوتك للآية التالية تلقائياً...';
+        ui.speechResult.classList.add('show');
+        speechEngine.start();
+      }, 300);
+    }
+  }
+
   ui.nextBtn.addEventListener('click', () => {
     const next = parseInt(AppState.current.ayah.id) + 1;
     if (next <= AppState.current.surah.ayahCount) {
       isTransitioning = true;
-      if (AppState.player.isPlaying) {
-        AppState.player.isPlaying = true;
+      if (AppState.speech.isListening) {
+        transitionToAyahWithRecording(next);
+      } else {
+        if (AppState.player.isPlaying) {
+          AppState.player.isPlaying = true;
+        }
+        loadAyah(next);
       }
-      loadAyah(next);
     }
   });
 
@@ -600,10 +624,14 @@ const initApp = async () => {
     const prev = parseInt(AppState.current.ayah.id) - 1;
     if (prev > 0) {
       isTransitioning = true;
-      if (AppState.player.isPlaying) {
-        AppState.player.isPlaying = true;
+      if (AppState.speech.isListening) {
+        transitionToAyahWithRecording(prev);
+      } else {
+        if (AppState.player.isPlaying) {
+          AppState.player.isPlaying = true;
+        }
+        loadAyah(prev);
       }
-      loadAyah(prev);
     }
   });
 
@@ -717,10 +745,15 @@ const initApp = async () => {
   });
 
   window.addEventListener('recordingready', (e) => {
-    currentRecordedBlob = e.detail;
-    ui.btnPlayRecording.disabled = false;
-    ui.btnPlayRecording.style.opacity = '1';
-    ui.btnPlayRecording.style.color = '#0ea5e9'; // Highlight blue as indicator
+    const { blob, surahId, ayahId } = e.detail;
+    
+    // Update play button only if the recording belongs to the currently displayed Ayah
+    if (AppState.current.surah.id === surahId && AppState.current.ayah.id === ayahId) {
+      currentRecordedBlob = blob;
+      ui.btnPlayRecording.disabled = false;
+      ui.btnPlayRecording.style.opacity = '1';
+      ui.btnPlayRecording.style.color = '#0ea5e9'; // Highlight blue as indicator
+    }
     
     ui.speechResult.textContent = 'تم تسجيل تلاوتك وحفظها وإرسالها للمعلم تلقائياً! ✔️';
     ui.speechResult.classList.add('show');
@@ -728,16 +761,17 @@ const initApp = async () => {
 
     // Convert Blob to Base64 and automatically add/replace report for teacher
     const reader = new FileReader();
-    reader.readAsDataURL(currentRecordedBlob);
+    reader.readAsDataURL(blob);
     reader.onloadend = () => {
       const audioBase64 = reader.result;
+      const surahName = surahsData.find(s => s.id === surahId)?.name || AppState.current.surah.name;
       
       const report = {
         id: Date.now(),
         timestamp: Date.now(),
-        surahId: AppState.current.surah.id,
-        surahName: AppState.current.surah.name,
-        ayahNumber: AppState.current.ayah.id,
+        surahId: surahId,
+        surahName: surahName,
+        ayahNumber: ayahId,
         text: AppState.speech.detectedText || 'تم تسجيل الصوت لتسميعه للمعلم',
         score: AppState.speech.latestScore || 0,
         audioBase64: audioBase64
@@ -1198,11 +1232,25 @@ const initApp = async () => {
     });
     navigator.mediaSession.setActionHandler('previoustrack', () => {
       const prev = parseInt(AppState.current.ayah.id) - 1;
-      if (prev >= 1) loadAyah(prev);
+      if (prev >= 1) {
+        isTransitioning = true;
+        if (AppState.speech.isListening) {
+          transitionToAyahWithRecording(prev);
+        } else {
+          loadAyah(prev);
+        }
+      }
     });
     navigator.mediaSession.setActionHandler('nexttrack', () => {
       const next = parseInt(AppState.current.ayah.id) + 1;
-      if (next <= AppState.current.surah.ayahCount) loadAyah(next);
+      if (next <= AppState.current.surah.ayahCount) {
+        isTransitioning = true;
+        if (AppState.speech.isListening) {
+          transitionToAyahWithRecording(next);
+        } else {
+          loadAyah(next);
+        }
+      }
     });
   }
 
