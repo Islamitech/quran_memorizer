@@ -327,6 +327,7 @@ const initApp = async () => {
     ui.btnPlayRecording.disabled = true;
     ui.btnPlayRecording.style.opacity = '0.5';
     AppState.speech.detectedText = '';
+    AppState.speech.latestScore = 0;
     currentRecordedBlob = null;
     ui.speechResult.classList.remove('show');
     ui.btnSendTeacher.style.display = 'none';
@@ -742,6 +743,13 @@ const initApp = async () => {
   window.addEventListener('speechresult', (e) => {
     const { text } = e.detail;
     AppState.speech.detectedText = text;
+    
+    // Calculate word match score against the current ayah text
+    const referenceText = AppState.current.ayah.text || '';
+    if (referenceText && text) {
+      const score = speechEngine.matchAlgo.calculateMatchScore(text, referenceText);
+      AppState.speech.latestScore = score;
+    }
   });
 
   window.addEventListener('recordingready', (e) => {
@@ -942,12 +950,16 @@ const initApp = async () => {
       
       const audioHtml = report.audioBase64 ? `<div class="report-audio"><audio src="${report.audioBase64}" controls></audio></div>` : '<p>لا يوجد تسجيل صوتي.</p>';
       
+      const scorePercent = Math.round(report.score * 100);
+      const scoreColor = scorePercent >= 70 ? '#22c55e' : scorePercent >= 40 ? '#f59e0b' : '#ef4444';
+      
       card.innerHTML = `
         <div class="report-header">
           <span>${report.surahName} - آية ${report.ayahNumber}</span>
-          <span class="report-score">تطابق: ${Math.round(report.score * 100)}%</span>
+          <span class="report-score" style="background-color: ${scoreColor}; color: #fff;" title="تطابق الكلمات فقط - لا يشمل التجويد أو مخارج الحروف">تطابق: ${scorePercent}%</span>
         </div>
         <div class="report-text">${report.text}</div>
+        <div style="font-size: 0.7rem; color: var(--text-secondary); margin-top: 2px; font-style: italic;">* نسبة التطابق للكلمات فقط، ولا تشمل التجويد أو مخارج النطق</div>
         ${audioHtml}
         <div style="font-size: 0.8rem; color: var(--text-secondary); margin-top: 4px;">
           التاريخ: ${new Date(report.timestamp).toLocaleString()}

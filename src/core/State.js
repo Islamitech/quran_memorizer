@@ -46,7 +46,8 @@ const initialState = {
     detectedText: '',
     isProcessing: false,
     audioBlobBase64: null,
-    liveEchoEnabled: false
+    liveEchoEnabled: false,
+    latestScore: 0
   },
   settings: {
     theme: 'light',
