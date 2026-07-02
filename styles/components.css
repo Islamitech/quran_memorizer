@@ -626,20 +626,20 @@ input[type="range"] {
   color: #0079c1;
 }
 
-/* Vodafone specific styles */
-.vodafone-card {
+/* Egypt Mobile Wallet specific styles */
+.wallet-egypt-card {
   border-color: #cbd5e1;
   cursor: default;
 }
-.vodafone-card:hover {
-  border-color: #e60000;
+.wallet-egypt-card:hover {
+  border-color: var(--accent-success);
 }
-.vodafone-card .donate-card-icon {
-  background-color: rgba(230, 0, 0, 0.1);
-  color: #e60000;
+.wallet-egypt-card .donate-card-icon {
+  background-color: var(--accent-success-light);
+  color: var(--accent-success);
 }
-.vodafone-card h3 {
-  color: #e60000;
+.wallet-egypt-card h3 {
+  color: var(--accent-success);
 }
 
 .copy-btn {

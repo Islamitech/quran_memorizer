@@ -100,7 +100,7 @@ const initApp = async () => {
     btnDonate: document.getElementById('btn-donate'),
     modalDonate: document.getElementById('modal-donate'),
     btnCloseDonate: document.getElementById('btn-close-donate'),
-    btnCopyVodafone: document.getElementById('btn-copy-vodafone'),
+    btnCopyWallet: document.getElementById('btn-copy-wallet'),
     donateToast: document.getElementById('donate-toast')
   };
 
@@ -1197,9 +1197,9 @@ const initApp = async () => {
     });
   }
 
-  // Handle Vodafone Cash Copy number action
-  if (ui.btnCopyVodafone) {
-    ui.btnCopyVodafone.addEventListener('click', () => {
+  // Handle Egypt Mobile Wallet Copy number action
+  if (ui.btnCopyWallet) {
+    ui.btnCopyWallet.addEventListener('click', () => {
       const phoneNumber = '+201143888355';
       
       // Use modern navigator.clipboard if available, else fallback
