@@ -459,8 +459,39 @@ input[type="range"] {
   color: var(--accent-primary);
 }
 
-/* Mobile responsive styles for bottom navigation controls and layout elements */
 @media (max-width: 600px) {
+  .app-header {
+    padding: 10px 12px !important;
+  }
+  .app-header h1 {
+    display: none !important; /* Hide 'محفّظ' text to free space for icons on mobile */
+  }
+  .logo {
+    gap: 0 !important;
+  }
+  .header-controls {
+    gap: 4px !important;
+    flex: 1;
+    justify-content: flex-end;
+  }
+  .icon-btn {
+    width: 32px !important;
+    height: 32px !important;
+  }
+  .icon-btn svg {
+    width: 18px !important;
+    height: 18px !important;
+  }
+  .progress-badge {
+    padding: 4px 8px !important;
+    font-size: 0.75rem !important;
+    gap: 3px !important;
+  }
+  .progress-badge svg {
+    width: 14px !important;
+    height: 14px !important;
+  }
+  
   .app-main {
     padding: 12px !important;
     gap: 12px !important;
