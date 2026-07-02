@@ -745,14 +745,14 @@ const initApp = async () => {
   });
 
   window.addEventListener('recordingready', (e) => {
-    const { blob, surahId, ayahId } = e.detail;
+    const { blob, surahId, ayahId, detectedText, score } = e.detail;
     
     // Update play button only if the recording belongs to the currently displayed Ayah
     if (AppState.current.surah.id === surahId && AppState.current.ayah.id === ayahId) {
       currentRecordedBlob = blob;
       ui.btnPlayRecording.disabled = false;
       ui.btnPlayRecording.style.opacity = '1';
-      ui.btnPlayRecording.style.color = '#0ea5e9'; // Highlight blue as indicator
+      ui.btnPlayRecording.style.color = '#0ea5e9';
     }
     
     ui.speechResult.textContent = 'تم تسجيل تلاوتك وحفظها وإرسالها للمعلم تلقائياً! ✔️';
@@ -772,8 +772,8 @@ const initApp = async () => {
         surahId: surahId,
         surahName: surahName,
         ayahNumber: ayahId,
-        text: AppState.speech.detectedText || 'تم تسجيل الصوت لتسميعه للمعلم',
-        score: AppState.speech.latestScore || 0,
+        text: detectedText || 'تم تسجيل الصوت لتسميعه للمعلم',
+        score: score || 0,
         audioBase64: audioBase64
       };
       
@@ -933,8 +933,8 @@ const initApp = async () => {
       return;
     }
     
-    // Sort latest first
-    const sorted = [...filtered].reverse();
+    // Sort by ayah number ascending (Ayah 1 at top)
+    const sorted = [...filtered].sort((a, b) => a.ayahNumber - b.ayahNumber);
     
     sorted.forEach(report => {
       const card = document.createElement('div');

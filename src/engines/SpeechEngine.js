@@ -9,15 +9,20 @@ export class SpeechEngine {
     this.audioChunks = [];
     this.isSupported = 'webkitSpeechRecognition' in window || 'SpeechRecognition' in window;
     this.matchAlgo = new MatchAlgorithm();
+    
+    // Live echo nodes
     this.liveEchoCtx = null;
     this.liveEchoSource = null;
+    this.liveEchoGain = null;
     
     // Internal state tracking
-    this.isRecording = false;       // TRUE while mic is active (independent of speech recognition)
-    this.activeStream = null;       // The live microphone stream - reused across ayah transitions
-    this.pendingRestart = false;    // Flag: should we restart recording for the next ayah?
+    this.isRecording = false;
+    this.activeStream = null;
+    this.pendingRestart = false;
     this.currentRecordingSurah = null;
     this.currentRecordingAyah = null;
+    this.currentRecordingText = '';  // Captured detected text at stop time
+    this.currentRecordingScore = 0;  // Captured score at stop time
     
     this.init();
   }
@@ -38,12 +43,72 @@ export class SpeechEngine {
     this.recognition.onend = this.handleEnd.bind(this);
   }
 
+  /**
+   * Start or resume live echo (mic → speakers with mosque reverb effect)
+   */
+  startLiveEcho(stream) {
+    try {
+      this.stopLiveEcho(); // Clean up any previous echo
+      
+      const AudioCtx = window.AudioContext || window.webkitAudioContext;
+      this.liveEchoCtx = new AudioCtx();
+      this.liveEchoSource = this.liveEchoCtx.createMediaStreamSource(stream);
+      
+      // Reverb chain: source → delay nodes → gain → destination
+      const dryNode = this.liveEchoCtx.createGain();
+      const wetNode = this.liveEchoCtx.createGain();
+      const delay1 = this.liveEchoCtx.createDelay(1.0);
+      const delay2 = this.liveEchoCtx.createDelay(1.0);
+      const feedback1 = this.liveEchoCtx.createGain();
+      const feedback2 = this.liveEchoCtx.createGain();
+      
+      delay1.delayTime.value = 0.18;
+      delay2.delayTime.value = 0.28;
+      feedback1.gain.value = 0.18;
+      feedback2.gain.value = 0.15;
+      dryNode.gain.value = 1.0;
+      wetNode.gain.value = 0.18;
+      
+      // Feedback loops
+      delay1.connect(feedback1);
+      feedback1.connect(delay1);
+      delay2.connect(feedback2);
+      feedback2.connect(delay2);
+      
+      // Signal routing
+      this.liveEchoSource.connect(dryNode);
+      dryNode.connect(this.liveEchoCtx.destination);
+      this.liveEchoSource.connect(delay1);
+      this.liveEchoSource.connect(delay2);
+      delay1.connect(wetNode);
+      delay2.connect(wetNode);
+      wetNode.connect(this.liveEchoCtx.destination);
+    } catch(e) {
+      console.warn("Live echo setup failed:", e);
+    }
+  }
+  
+  /**
+   * Stop live echo audio routing
+   */
+  stopLiveEcho() {
+    try {
+      if (this.liveEchoSource) {
+        this.liveEchoSource.disconnect();
+        this.liveEchoSource = null;
+      }
+      if (this.liveEchoCtx && this.liveEchoCtx.state !== 'closed') {
+        this.liveEchoCtx.close();
+        this.liveEchoCtx = null;
+      }
+    } catch(e) {}
+  }
+
   async start() {
     if (!this.isSupported) {
       alert('عذراً، متصفحك لا يدعم خاصية التعرف على الصوت. يرجى استخدام Google Chrome.');
       return;
     }
-    // Prevent double-start
     if (this.isRecording) return;
     
     try {
@@ -59,7 +124,12 @@ export class SpeechEngine {
         this.activeStream = await navigator.mediaDevices.getUserMedia({ audio: true });
       }
       
-      // Start speech recognition (may fail if already running - that's ok)
+      // Start live echo if enabled
+      if (AppState.speech.liveEchoEnabled) {
+        this.startLiveEcho(this.activeStream);
+      }
+      
+      // Start speech recognition
       try {
         this.recognition.start();
       } catch(recError) {
@@ -78,6 +148,8 @@ export class SpeechEngine {
         const audioBlob = new Blob(this.audioChunks, { type: 'audio/webm' });
         const recordedSurah = this.currentRecordingSurah;
         const recordedAyah = this.currentRecordingAyah;
+        const recordedText = this.currentRecordingText;
+        const recordedScore = this.currentRecordingScore;
         
         // Only save if we actually captured audio data
         if (audioBlob.size > 0) {
@@ -87,7 +159,9 @@ export class SpeechEngine {
                 detail: {
                   blob: audioBlob,
                   surahId: recordedSurah,
-                  ayahId: recordedAyah
+                  ayahId: recordedAyah,
+                  detectedText: recordedText,
+                  score: recordedScore
                 }
               }));
             })
@@ -100,17 +174,17 @@ export class SpeechEngine {
           };
         }
         
-        // If pendingRestart is set, start a new recording segment for the next ayah
+        // If pendingRestart, start a new recording segment for the next ayah
         if (this.pendingRestart) {
           this.pendingRestart = false;
-          this.isRecording = false; // Allow start() to run
-          // Use setTimeout to let the browser finish cleanup
+          this.isRecording = false;
           setTimeout(() => {
             this.start();
           }, 100);
         } else {
-          // Fully stop: release mic stream
+          // Fully stop: release mic stream and echo
           this.isRecording = false;
+          this.stopLiveEcho();
           if (this.activeStream) {
             this.activeStream.getTracks().forEach(track => track.stop());
             this.activeStream = null;
@@ -139,7 +213,11 @@ export class SpeechEngine {
     
     this.pendingRestart = restartForNextAyah;
     
-    // Stop speech recognition (may fire handleEnd - we ignore it)
+    // Capture the detected text and score NOW before loadAyah resets them
+    this.currentRecordingText = AppState.speech.detectedText || '';
+    this.currentRecordingScore = AppState.speech.latestScore || 0;
+    
+    // Stop speech recognition
     try {
       this.recognition.stop();
     } catch(e) {}
@@ -155,6 +233,7 @@ export class SpeechEngine {
         setTimeout(() => this.start(), 100);
       } else {
         this.isRecording = false;
+        this.stopLiveEcho();
         if (this.activeStream) {
           this.activeStream.getTracks().forEach(track => track.stop());
           this.activeStream = null;
@@ -192,7 +271,6 @@ export class SpeechEngine {
 
   handleError(event) {
     console.error("Speech recognition error", event.error);
-    // Don't dispatch error for 'aborted' - that's normal during stop
     if (event.error !== 'aborted') {
       window.dispatchEvent(new CustomEvent('speecherror', { detail: event.error }));
     }
@@ -204,9 +282,7 @@ export class SpeechEngine {
     if (this.isRecording) {
       try {
         this.recognition.start();
-      } catch(e) {
-        // Ignore - recognition may have been stopped intentionally
-      }
+      } catch(e) {}
     }
   }
 }
