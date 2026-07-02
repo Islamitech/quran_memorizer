@@ -381,38 +381,36 @@ const initApp = async () => {
       // Start preloading the NEXT ayah immediately in the background!
       preloadNextAyah(surahId, ayahNumber);
     } else {
-      // Fallback: load asynchronously if not preloaded (e.g. manual click)
-      DbManager.getOfflineAudio(reciter, surahId, ayahNumber).then(cachedBlob => {
-        if (cachedBlob) {
-          const localUrl = URL.createObjectURL(cachedBlob);
-          ui.audio.src = localUrl;
-          playAudio();
-        } else {
-          const netUrl = quranAPI.generateAudioUrl(surahId, ayahNumber, reciter);
-          if (navigator.onLine) {
-            ui.audio.src = netUrl;
+      // If we are online, construct the network URL and play SYNCHRONOUSLY to preserve user gesture
+      if (navigator.onLine) {
+        const netUrl = quranAPI.generateAudioUrl(surahId, ayahNumber, reciter);
+        ui.audio.src = netUrl;
+        playAudio();
+        
+        // Cache to IndexedDB in background
+        fetch(netUrl)
+          .then(res => { if (res.ok) return res.blob(); })
+          .then(blob => { if (blob) DbManager.saveOfflineAudio(reciter, surahId, ayahNumber, blob); })
+          .catch(err => console.warn("Background audio cache failed:", err));
+          
+        preloadNextAyah(surahId, ayahNumber);
+      } else {
+        // If offline and not preloaded, fall back to checking IndexedDB asynchronously
+        DbManager.getOfflineAudio(reciter, surahId, ayahNumber).then(cachedBlob => {
+          if (cachedBlob) {
+            const localUrl = URL.createObjectURL(cachedBlob);
+            ui.audio.src = localUrl;
             playAudio();
-            
-            // Download in background for offline use
-            fetch(netUrl)
-              .then(res => {
-                if (res.ok) return res.blob();
-                throw new Error("Fetch failed");
-              })
-              .then(blob => {
-                DbManager.saveOfflineAudio(reciter, surahId, ayahNumber, blob);
-              })
-              .catch(err => console.warn("Background audio cache failed:", err));
           } else {
             ui.audio.src = '';
             AppState.player.isPlaying = false;
             checkOfflineStatusAndAlert();
           }
-        }
-        
-        // Start preloading the NEXT ayah immediately in the background!
-        preloadNextAyah(surahId, ayahNumber);
-      });
+          preloadNextAyah(surahId, ayahNumber);
+        }).catch(err => {
+          preloadNextAyah(surahId, ayahNumber);
+        });
+      }
     }
 
     function playAudio() {
