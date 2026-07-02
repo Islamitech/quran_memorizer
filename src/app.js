@@ -96,7 +96,12 @@ const initApp = async () => {
     listeningRepeatSelect: document.getElementById('listening-repeat-surah-select'),
     listeningSurahsList: document.getElementById('listening-surahs-list'),
     btnStartListeningMode: document.getElementById('btn-start-listening-mode'),
-    chkLiveEcho: document.getElementById('chk-live-echo')
+    chkLiveEcho: document.getElementById('chk-live-echo'),
+    btnDonate: document.getElementById('btn-donate'),
+    modalDonate: document.getElementById('modal-donate'),
+    btnCloseDonate: document.getElementById('btn-close-donate'),
+    btnCopyVodafone: document.getElementById('btn-copy-vodafone'),
+    donateToast: document.getElementById('donate-toast')
   };
 
   karaokeEngine.init(ui.audio, ui.quranDisplay);
@@ -1172,6 +1177,61 @@ const initApp = async () => {
       } else {
         // iOS Safari manual walkthrough or generic guide
         alert("تثبيت التطبيق على هاتف الذكي:\n\n• للآيفون (iOS): اضغط على زر مشاركة في متصفح Safari ثم اختر 'إضافة إلى الصفحة الرئيسية' (Add to Home Screen).\n\n• للأندرويد: اضغط على نقاط القائمة الجانبية للمتصفح ثم اختر 'تثبيت التطبيق' (Install App).");
+      }
+    });
+  }
+
+  // Open Donation Modal
+  if (ui.btnDonate) {
+    ui.btnDonate.addEventListener('click', () => {
+      if (ui.modalOverlay) ui.modalOverlay.style.display = 'block';
+      if (ui.modalDonate) ui.modalDonate.style.display = 'flex';
+    });
+  }
+
+  // Close Donation Modal
+  if (ui.btnCloseDonate) {
+    ui.btnCloseDonate.addEventListener('click', () => {
+      if (ui.modalOverlay) ui.modalOverlay.style.display = 'none';
+      if (ui.modalDonate) ui.modalDonate.style.display = 'none';
+    });
+  }
+
+  // Handle Vodafone Cash Copy number action
+  if (ui.btnCopyVodafone) {
+    ui.btnCopyVodafone.addEventListener('click', () => {
+      const phoneNumber = '+201143888355';
+      
+      // Use modern navigator.clipboard if available, else fallback
+      if (navigator.clipboard) {
+        navigator.clipboard.writeText(phoneNumber).then(showToast).catch(fallbackCopy);
+      } else {
+        fallbackCopy();
+      }
+      
+      function fallbackCopy() {
+        const textArea = document.createElement('textarea');
+        textArea.value = phoneNumber;
+        textArea.style.position = 'fixed'; // prevent scrolling to bottom
+        document.body.appendChild(textArea);
+        textArea.focus();
+        textArea.select();
+        try {
+          document.execCommand('copy');
+          showToast();
+        } catch (err) {
+          console.warn('Fallback copy failed', err);
+        }
+        document.body.removeChild(textArea);
+      }
+      
+      function showToast() {
+        if (ui.donateToast) {
+          ui.donateToast.classList.add('show');
+          setTimeout(() => {
+            ui.donateToast.classList.remove('show');
+          }, 2500);
+        }
       }
     });
   }

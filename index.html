@@ -51,6 +51,9 @@
         <button id="btn-tour" class="icon-btn" aria-label="مساعدة">
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
         </button>
+        <button id="btn-donate" class="icon-btn" aria-label="تبرع لدعم البرنامج">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg>
+        </button>
         <button id="btn-install" class="icon-btn" aria-label="تنزيل التطبيق" style="display: none;">
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
         </button>
@@ -242,6 +245,53 @@
       </button>
     </div>
   </div>
+  <!-- Donation Modal -->
+  <div id="modal-donate" class="modal-card" style="display: none; width: 90%; max-width: 450px;">
+    <div class="modal-header">
+      <h2>دعم مشروع محفّظ</h2>
+      <button id="btn-close-donate" class="icon-btn" aria-label="إغلاق نافذة التبرع">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+      </button>
+    </div>
+    <div class="modal-body donate-modal-body">
+      <p class="donate-intro">هذا التطبيق صدقة جارية، مجاني بالكامل وخالٍ تماماً من الإعلانات. دعمكم الكريم يساهم في تمويل تكاليف استضافة الخوادم وتطوير مزايا جديدة تخدم القرآن الكريم.</p>
+      
+      <div class="donate-options">
+        <!-- PayPal Card -->
+        <a href="https://paypal.me/AEzalden" target="_blank" class="donate-card paypal-card">
+          <div class="donate-card-icon">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2" ry="2"></rect><line x1="2" y1="10" x2="22" y2="10"></line></svg>
+          </div>
+          <div class="donate-card-info">
+            <h3>التبرع عبر PayPal</h3>
+            <p>اضغط للفتح المباشر لـ paypal.me/AEzalden</p>
+          </div>
+          <div class="donate-card-action">
+            <span>دعم</span>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
+          </div>
+        </a>
+
+        <!-- Vodafone Cash Card -->
+        <div class="donate-card vodafone-card" id="card-vodafone">
+          <div class="donate-card-icon">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="2" width="14" height="20" rx="2" ry="2"></rect><line x1="12" y1="18" x2="12.01" y2="18"></line></svg>
+          </div>
+          <div class="donate-card-info">
+            <h3>فودافون كاش (Vodafone Cash)</h3>
+            <p class="phone-number" id="vodafone-phone-num">+201143888355</p>
+          </div>
+          <button id="btn-copy-vodafone" class="copy-btn">
+            <span>نسخ الرقم</span>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+          </button>
+        </div>
+      </div>
+      
+      <div id="donate-toast" class="toast-notification">تم نسخ رقم فودافون كاش بنجاح!</div>
+    </div>
+  </div>
+
   <script type="module" src="./src/app.js"></script>
 </body>
 </html>

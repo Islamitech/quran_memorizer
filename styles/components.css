@@ -510,3 +510,181 @@ input[type="range"] {
     gap: 10px !important;
   }
 }
+
+/* Donate Button Pulse Animation */
+@keyframes heartPulse {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.15); }
+  100% { transform: scale(1); }
+}
+
+#btn-donate {
+  color: #f43f5e !important;
+  animation: heartPulse 2.5s infinite ease-in-out;
+}
+
+/* Donate Modal & Options Styling */
+.donate-modal-body {
+  padding: 24px !important;
+  text-align: center;
+  direction: rtl;
+}
+
+.donate-intro {
+  font-family: var(--font-arabic);
+  font-size: 1.05rem;
+  color: var(--text-secondary);
+  line-height: 1.8;
+  margin-bottom: 24px;
+}
+
+.donate-options {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.donate-card {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 16px 20px;
+  border-radius: 12px;
+  text-decoration: none;
+  transition: transform 0.2s, box-shadow 0.2s;
+  border: 1px solid var(--border-light);
+  cursor: pointer;
+  background-color: var(--bg-card);
+  text-align: right;
+  position: relative;
+  overflow: hidden;
+}
+
+.donate-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+}
+
+.donate-card-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.donate-card-info {
+  flex: 1;
+}
+
+.donate-card-info h3 {
+  font-family: var(--font-arabic);
+  font-size: 1.15rem;
+  font-weight: 700;
+  margin-bottom: 4px;
+}
+
+.donate-card-info p {
+  font-family: var(--font-arabic);
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+}
+
+.donate-card-info p.phone-number {
+  font-family: var(--font-numbers);
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-top: 2px;
+  letter-spacing: 0.5px;
+}
+
+/* PayPal specific styles */
+.paypal-card {
+  border-color: #cbd5e1;
+}
+.paypal-card:hover {
+  border-color: #0079c1;
+}
+.paypal-card .donate-card-icon {
+  background-color: rgba(0, 121, 193, 0.1);
+  color: #0079c1;
+}
+.paypal-card h3 {
+  color: #003087;
+}
+
+.donate-card-action {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--font-arabic);
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #0079c1;
+}
+
+/* Vodafone specific styles */
+.vodafone-card {
+  border-color: #cbd5e1;
+  cursor: default;
+}
+.vodafone-card:hover {
+  border-color: #e60000;
+}
+.vodafone-card .donate-card-icon {
+  background-color: rgba(230, 0, 0, 0.1);
+  color: #e60000;
+}
+.vodafone-card h3 {
+  color: #e60000;
+}
+
+.copy-btn {
+  background: var(--bg-page);
+  border: 1px solid var(--border-light);
+  padding: 8px 12px;
+  border-radius: 8px;
+  font-family: var(--font-arabic);
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.2s;
+}
+
+.copy-btn:hover {
+  background: var(--accent-primary-light);
+  color: var(--accent-primary);
+  border-color: var(--accent-primary);
+}
+
+.toast-notification {
+  position: absolute;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%) translateY(20px);
+  background: #334155;
+  color: #ffffff;
+  padding: 8px 16px;
+  border-radius: 20px;
+  font-family: var(--font-arabic);
+  font-size: 0.9rem;
+  opacity: 0;
+  visibility: hidden;
+  transition: all 0.3s ease;
+  z-index: 1100;
+  box-shadow: var(--shadow-lg);
+}
+
+.toast-notification.show {
+  opacity: 1;
+  visibility: visible;
+  transform: translateX(-50%) translateY(0);
+}
+
