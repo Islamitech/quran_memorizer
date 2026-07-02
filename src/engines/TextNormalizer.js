@@ -1,44 +1,60 @@
 export class TextNormalizer {
   constructor() {
-    this.arabicMap = {
-      'أ': 'ا', 'إ': 'ا', 'آ': 'ا',
-      'ة': 'ه',
-      'ؤ': 'و', 'ئ': 'ي',
-      'ى': 'ي'
-    };
-    
-    this.diacritics = /[\u0617-\u061A\u064B-\u0652\u06D6-\u06ED]/g;
-    this.specialChars = /[ًٌٍَُِّْٰٖٜٟٗ٘ٙٚٛٝٞ]/g;
+    // Extended diacritics regex covering ALL Arabic/Uthmani marks
+    this.diacritics = /[\u0610-\u061A\u064B-\u065F\u0670\u06D6-\u06ED\u08D3-\u08FF\u0640]/g;
     this.spaceNormalizer = /\s+/g;
+
+    // خريطة الحروف المقطعة لتوسيعها إلى النطق اللفظي المسموع
+    this.muqattaahMap = {
+      'الم': 'الف لام ميم',
+      'المص': 'الف لام ميم صاد',
+      'الر': 'الف لام را',
+      'المر': 'الف لام ميم را',
+      'كهيعص': 'كاف ها يا عين صاد',
+      'طه': 'طا ها',
+      'طسم': 'طا سين ميم',
+      'طس': 'طا سين',
+      'يس': 'يا سين',
+      'ص': 'صاد',
+      'حم': 'حا ميم',
+      'عسق': 'عين سين قاف',
+      'ق': 'قاف',
+      'ن': 'نون'
+    };
   }
   
   normalize(text, options = {}) {
     let result = text;
     
     if (options.removeDiacritics !== false) {
+      // Remove all Arabic diacritics, tashkeel, Uthmani marks, and tatweel
       result = result.replace(this.diacritics, '');
-      result = result.replace(this.specialChars, '');
     }
     
+    if (options.removePunctuation !== false) {
+      // Remove Quran stop marks and punctuation
+      result = result.replace(/[،؛؟!.,:ۖۗۘۙۚۛۜ۞۩﴾﴿⌐¤]/g, '');
+      // Remove ayah number markers (circled digits etc.)
+      result = result.replace(/[\u06DD]/g, '');
+    }
+
+    // فحص وتوسيع الحروف المقطعة المقروءة بناءً على الخريطة اللفظية
+    let words = result.split(' ');
+    words = words.map(word => this.muqattaahMap[word] || word);
+    result = words.join(' ');
+    
     if (options.unifyLetters !== false) {
-      result = result.replace(/[أإآ]/g, 'ا');
+      // Unify all alef variants including alef wasla (ٱ U+0671)
+      result = result.replace(/[أإآٱ]/g, 'ا');
       result = result.replace(/ة/g, 'ه');
       result = result.replace(/ؤ/g, 'و');
       result = result.replace(/ئ/g, 'ي');
       result = result.replace(/ى/g, 'ي');
     }
     
-    if (options.removePunctuation !== false) {
-      result = result.replace(/[،؛؟!.،:ۖۗۘۙۚۛ]/g, '');
-    }
-    
     if (options.normalizeSpaces !== false) {
       result = result.replace(this.spaceNormalizer, ' ');
       result = result.trim();
-    }
-    
-    if (options.removeRepeatedChars !== false) {
-      result = result.replace(/(.)\1{2,}/g, '$1');
     }
     
     return result;
