@@ -124,11 +124,6 @@ export class SpeechEngine {
         this.activeStream = await navigator.mediaDevices.getUserMedia({ audio: true });
       }
       
-      // Start live echo if enabled
-      if (AppState.speech.liveEchoEnabled) {
-        this.startLiveEcho(this.activeStream);
-      }
-      
       // Start speech recognition
       try {
         this.recognition.start();
