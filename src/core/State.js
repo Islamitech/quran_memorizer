@@ -38,7 +38,7 @@ const initialState = {
     duration: 0,
     volume: 1.0,
     speed: 1.0,
-    reciter: 'mishary'
+    reciter: 'fares'
   },
   speech: {
     isListening: false,
@@ -55,7 +55,7 @@ const initialState = {
     tafsir: 'muyassar',
     autoScroll: true,
     highlightMode: 'word',
-    reciter: 'ar.alafasy'
+    reciter: 'fares'
   },
   userRole: 'student',
   reports: []
