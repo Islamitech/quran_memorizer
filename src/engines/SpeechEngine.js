@@ -28,7 +28,21 @@ export class SpeechEngine {
   }
   
   init() {
+    this.initRecognition();
+  }
+
+  initRecognition() {
     if (!this.isSupported) return;
+    
+    // Clean up old recognition if any to prevent memory/buffer leaks and late events
+    if (this.recognition) {
+      try {
+        this.recognition.abort();
+      } catch(e) {}
+      this.recognition.onresult = null;
+      this.recognition.onerror = null;
+      this.recognition.onend = null;
+    }
     
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     this.recognition = new SpeechRecognition();
@@ -124,10 +138,8 @@ export class SpeechEngine {
         this.activeStream = await navigator.mediaDevices.getUserMedia({ audio: true });
       }
       
-      // Start speech recognition robustly by aborting any lingering session first
-      try {
-        this.recognition.abort();
-      } catch(e) {}
+      // Re-create the recognition instance to prevent buffer leaks or late result events from previous ayah
+      this.initRecognition();
       
       setTimeout(() => {
         try {

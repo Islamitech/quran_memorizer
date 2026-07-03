@@ -648,7 +648,7 @@ const initApp = async () => {
     isRecitationTransitioning = true;
     setTimeout(() => {
       isRecitationTransitioning = false;
-    }, 1200); // 1.2s safety window to allow speech engine to completely restart and ignore any previous trailing words
+    }, 2000); // 2.0s safety window to allow speech engine to completely restart and ignore any previous trailing words
     
     loadAyah(targetAyah);
   }
@@ -1080,11 +1080,38 @@ const initApp = async () => {
       const score = speechEngine.matchAlgo.calculateMatchScore(text, referenceText);
       AppState.speech.latestScore = score;
 
-      const spokenWordsCount = text.trim().split(/\s+/).length;
-      const refWordsCount = referenceText.trim().split(/\s+/).length;
+      const spokenWords = text.trim().split(/\s+/).filter(w => w.length > 0);
+      const refWords = referenceText.trim().split(/\s+/).filter(w => w.length > 0);
+      const spokenWordsCount = spokenWords.length;
+      const refWordsCount = refWords.length;
       
       // Relaxed matching check: accepts if score >= 78% (allowing speech-to-text minor word/pronunciation variations)
-      const isCorrect = score >= 0.78;
+      const scoreCorrect = score >= 0.78;
+      
+      // To prevent premature ending, ensure they have reached the end of the ayah:
+      // 1. Spoken words length must be at least refWordsCount - 1
+      // 2. Either the last word or second-to-last word of the reference must be matched somewhere in the spoken text, or spoken words count is >= refWordsCount
+      let isCorrect = scoreCorrect;
+      if (scoreCorrect && refWordsCount > 1) {
+        const normOpts = { removeDiacritics: true, unifyLetters: true };
+        const cleanLastWord = speechEngine.matchAlgo.normalizer.normalize(refWords[refWordsCount - 1], normOpts);
+        const cleanSecondLastWord = speechEngine.matchAlgo.normalizer.normalize(refWords[refWordsCount - 2], normOpts);
+        
+        const isLastWordMatched = spokenWords.some(sw => {
+          const cleanSw = speechEngine.matchAlgo.normalizer.normalize(sw, normOpts);
+          return speechEngine.matchAlgo.isWordMatch(cleanSw, cleanLastWord);
+        });
+        
+        const isSecondLastMatched = spokenWords.some(sw => {
+          const cleanSw = speechEngine.matchAlgo.normalizer.normalize(sw, normOpts);
+          return speechEngine.matchAlgo.isWordMatch(cleanSw, cleanSecondLastWord);
+        });
+        
+        const hasReachedEnd = (spokenWordsCount >= refWordsCount - 1) && 
+                             (isLastWordMatched || isSecondLastMatched || spokenWordsCount >= refWordsCount);
+        
+        isCorrect = hasReachedEnd;
+      }
 
       // Mark as mastered if correct, otherwise mark as unmastered (for logical accuracy)
       if (isCorrect) {
@@ -1650,6 +1677,7 @@ const initApp = async () => {
         styleTag = document.createElement('style');
         styleTag.id = 'hide-text-style-rule';
         styleTag.innerHTML = `
+          #basmalah-container { display: none !important; }
           #current-ayah-display .word { display: none !important; }
           #tafsir-display, #translation-display { display: none !important; }
         `;
