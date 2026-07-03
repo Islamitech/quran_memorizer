@@ -1,6 +1,6 @@
 // sw.js - Service Worker المتقدم
 
-const CACHE_VERSION = 'v68';
+const CACHE_VERSION = 'v69';
 const CACHE_NAMES = {
   static: `static-${CACHE_VERSION}`,
   audio: `audio-${CACHE_VERSION}`,
