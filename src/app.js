@@ -779,15 +779,27 @@ const initApp = async () => {
       const score = speechEngine.matchAlgo.calculateMatchScore(text, referenceText);
       AppState.speech.latestScore = score;
 
-      // Mark as mastered if correct (>= 70%)
-      if (score >= 0.70) {
+      const spokenWordsCount = text.trim().split(/\s+/).length;
+      const refWordsCount = referenceText.trim().split(/\s+/).length;
+      
+      // Calculate dynamic word count threshold (must read near the end of the ayah)
+      let minSpokenWords = refWordsCount;
+      if (refWordsCount > 3 && refWordsCount <= 8) {
+        minSpokenWords = refWordsCount - 1;
+      } else if (refWordsCount > 8) {
+        minSpokenWords = refWordsCount - 2;
+      }
+      const hasSpokenEnough = spokenWordsCount >= minSpokenWords;
+
+      // Mark as mastered if correct (>= 70%) and they have spoken enough words to finish
+      if (score >= 0.70 && hasSpokenEnough) {
         markAyahAsMastered(AppState.current.surah.id, AppState.current.ayah.id);
       }
 
       // Handle recitation testing mode (whole Surah recitation mode)
       if (AppState.settings.hideTextMode) {
-        // If the score matches correctly (70% or more), reveal the ayah and auto-advance
-        if (score >= 0.70 && !correctTransitionTimeout) {
+        // If the score matches correctly (70% or more) and they finished reciting, reveal the ayah and auto-advance
+        if (score >= 0.70 && hasSpokenEnough && !correctTransitionTimeout) {
           // 1. Reveal words of current active Ayah
           ui.quranDisplay.classList.add('reveal-words');
           ui.speechResult.innerHTML = '✔️ <strong>تسميع صحيح!</strong> نسبة المطابقة: ' + Math.round(score * 100) + '% - الانتقال للآية التالية...';
