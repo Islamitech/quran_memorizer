@@ -1233,6 +1233,17 @@ const initApp = async () => {
           ui.speechResult.classList.add('show');
         }
       }
+      // Normal mode (text visible): show real-time feedback
+      else {
+        const scorePercent = Math.round(score * 100);
+        if (isCorrect) {
+          ui.speechResult.innerHTML = `✅ <strong>تلاوة صحيحة!</strong> نسبة التطابق: ${scorePercent}%`;
+          ui.speechResult.classList.add('show');
+        } else if (spokenWordsCount >= 2) {
+          ui.speechResult.innerHTML = `🎙️ جاري الفحص... نسبة التطابق: ${scorePercent}%`;
+          ui.speechResult.classList.add('show');
+        }
+      }
     }
   });
 
@@ -1254,9 +1265,12 @@ const initApp = async () => {
       markAyahAsUnmastered(surahId, ayahId);
     }
     
-    ui.speechResult.textContent = 'تم تسجيل تلاوتك وحفظها وإرسالها للمعلم تلقائياً! ✔️';
-    ui.speechResult.classList.add('show');
-    setTimeout(() => ui.speechResult.classList.remove('show'), 3500);
+    // Only show save confirmation if no active feedback is being displayed (e.g. from speechresult handler)
+    if (!ui.speechResult.classList.contains('show')) {
+      ui.speechResult.textContent = 'تم تسجيل تلاوتك وحفظها وإرسالها للمعلم تلقائياً! ✔️';
+      ui.speechResult.classList.add('show');
+      setTimeout(() => ui.speechResult.classList.remove('show'), 3500);
+    }
 
     // Convert Blob to Base64 and automatically add/replace report for teacher
     const reader = new FileReader();
@@ -1469,7 +1483,22 @@ const initApp = async () => {
         ui.speechResult.classList.remove('show');
       }
     } else {
-      ui.speechResult.classList.remove('show');
+      // Normal mode (text visible): show final score when recording stops
+      const score = AppState.speech.latestScore || 0;
+      const text = AppState.speech.detectedText || '';
+      const referenceText = AppState.current.ayah.text || '';
+      if (text && referenceText) {
+        const scorePercent = Math.round(score * 100);
+        const isCorrect = score >= 0.78;
+        if (isCorrect) {
+          ui.speechResult.innerHTML = `✅ <strong>تلاوة صحيحة!</strong> نسبة التطابق: ${scorePercent}%`;
+        } else {
+          highlightMistakes(text, referenceText);
+          ui.speechResult.innerHTML = `⚠️ <strong>نسبة التطابق: ${scorePercent}%</strong> - راجع الكلمات الملونة أعلاه لتصحيح تلاوتك`;
+        }
+        ui.speechResult.classList.add('show');
+        setTimeout(() => ui.speechResult.classList.remove('show'), 5000);
+      }
     }
   });
 
