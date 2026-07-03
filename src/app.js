@@ -123,6 +123,7 @@ const initApp = async () => {
   let repeatSurahId = null;
   let currentPlayingRecording = null;
   let isTransitioning = false;
+  let ayahErrorCount = 0;
 
   // Continuous gapless preloader system
   let preloadedNextAudio = {
@@ -334,6 +335,7 @@ const initApp = async () => {
     ui.btnPlayRecording.style.opacity = '0.5';
     AppState.speech.detectedText = '';
     AppState.speech.latestScore = 0;
+    ayahErrorCount = 0;
     currentRecordedBlob = null;
     ui.speechResult.classList.remove('show');
     ui.btnSendTeacher.style.display = 'none';
@@ -756,6 +758,77 @@ const initApp = async () => {
     }
   }
 
+  function highlightMistakes(spokenText, referenceText) {
+    const normalizeOpts = { removeDiacritics: true, unifyLetters: true };
+    const normalizer = speechEngine.matchAlgo.normalizer;
+    
+    const cleanSpoken = normalizer.normalize(spokenText, normalizeOpts);
+    const spokenWords = cleanSpoken.split(' ').filter(w => w.length > 0);
+    
+    const rawRefWords = referenceText.split(' ').filter(w => w.length > 0);
+    const cleanRefWords = rawRefWords.map(w => normalizer.normalize(w, normalizeOpts));
+    
+    const m = spokenWords.length;
+    const n = cleanRefWords.length;
+    const dp = Array(m + 1).fill(null).map(() => Array(n + 1).fill(0));
+    
+    for (let i = 1; i <= m; i++) {
+      for (let j = 1; j <= n; j++) {
+        if (spokenWords[i - 1] === cleanRefWords[j - 1]) {
+          dp[i][j] = dp[i - 1][j - 1] + 1;
+        } else {
+          dp[i][j] = Math.max(dp[i - 1][j], dp[i][j - 1]);
+        }
+      }
+    }
+    
+    const matchedRefIndices = new Set();
+    let i = m, j = n;
+    while (i > 0 && j > 0) {
+      if (spokenWords[i - 1] === cleanRefWords[j - 1]) {
+        matchedRefIndices.add(j - 1);
+        i--;
+        j--;
+      } else if (dp[i - 1][j] > dp[i][j - 1]) {
+        i--;
+      } else {
+        j--;
+      }
+    }
+    
+    ui.quranDisplay.innerHTML = '';
+    rawRefWords.forEach((word, idx) => {
+      const span = document.createElement('span');
+      span.className = 'word';
+      span.textContent = word;
+      
+      if (matchedRefIndices.has(idx)) {
+        span.style.color = '#22c55e'; // Green for correct words
+        span.style.fontWeight = '500';
+      } else {
+        span.style.color = '#ef4444'; // Red for missing/incorrect words
+        span.style.textDecoration = 'underline dashed #ef4444';
+        span.style.fontWeight = 'bold';
+      }
+      
+      ui.quranDisplay.appendChild(span);
+      ui.quranDisplay.appendChild(document.createTextNode(' '));
+    });
+    
+    const marker = document.createElement('span');
+    marker.className = 'ayah-number-marker';
+    marker.style.fontFamily = 'var(--font-quran)';
+    marker.style.fontSize = '0.8em';
+    marker.style.color = 'var(--text-secondary)';
+    marker.style.opacity = '0.8';
+    marker.style.marginRight = '6px';
+    marker.style.userSelect = 'none';
+    marker.textContent = `﴿${parseInt(AppState.current.ayah.id).toLocaleString('ar-EG')}﴾`;
+    ui.quranDisplay.appendChild(marker);
+    
+    ui.quranDisplay.classList.add('reveal-words');
+  }
+
   ui.micBtn.addEventListener('click', () => {
     if(speechEngine.isRecording) {
       speechEngine.stop();
@@ -782,27 +855,21 @@ const initApp = async () => {
       const spokenWordsCount = text.trim().split(/\s+/).length;
       const refWordsCount = referenceText.trim().split(/\s+/).length;
       
-      // Calculate dynamic word count threshold (must read near the end of the ayah)
-      let minSpokenWords = refWordsCount;
-      if (refWordsCount > 3 && refWordsCount <= 8) {
-        minSpokenWords = refWordsCount - 1;
-      } else if (refWordsCount > 8) {
-        minSpokenWords = refWordsCount - 2;
-      }
-      const hasSpokenEnough = spokenWordsCount >= minSpokenWords;
+      // Strict matching check: must match completely and score >= 95% (almost 100%)
+      const isPerfect = score >= 0.95 && spokenWordsCount >= refWordsCount;
 
-      // Mark as mastered if correct (>= 70%) and they have spoken enough words to finish
-      if (score >= 0.70 && hasSpokenEnough) {
+      // Mark as mastered if correct
+      if (isPerfect) {
         markAyahAsMastered(AppState.current.surah.id, AppState.current.ayah.id);
       }
 
       // Handle recitation testing mode (whole Surah recitation mode)
       if (AppState.settings.hideTextMode) {
-        // If the score matches correctly (70% or more) and they finished reciting, reveal the ayah and auto-advance
-        if (score >= 0.70 && hasSpokenEnough && !correctTransitionTimeout) {
+        // If the score is perfect, reveal the ayah and auto-advance
+        if (isPerfect && !correctTransitionTimeout) {
           // 1. Reveal words of current active Ayah
           ui.quranDisplay.classList.add('reveal-words');
-          ui.speechResult.innerHTML = '✔️ <strong>تسميع صحيح!</strong> نسبة المطابقة: ' + Math.round(score * 100) + '% - الانتقال للآية التالية...';
+          ui.speechResult.innerHTML = '✔️ <strong>تسميع كامل وصحيح 100%!</strong> - الانتقال للآية التالية...';
           ui.speechResult.classList.add('show');
           
           // 2. Clear error class if any
@@ -823,27 +890,25 @@ const initApp = async () => {
               setTimeout(() => ui.speechResult.classList.remove('show'), 5000);
             }
           }, 1800);
-        } 
-        // If the user spoke a significant number of words, but match score is still low (Mistake/Block)
-        else if (!correctTransitionTimeout) {
-          const spokenWordsCount = text.trim().split(/\s+/).length;
-          const refWordsCount = referenceText.trim().split(/\s+/).length;
+        }
+        // If user spoke more words than reference but it's not perfect (Mistake/Block)
+        else if (!correctTransitionTimeout && spokenWordsCount >= refWordsCount) {
+          // Stop recording to prevent extra recording and let them fix
+          speechEngine.stop(false);
           
-          // Block and alert if they spoke a minimum threshold of words but similarity is poor
-          if (spokenWordsCount >= Math.max(3, refWordsCount) && score < 0.50) {
-            // Stop recording immediately to prevent further recording
-            speechEngine.stop(false);
-            
-            // Show error message
-            ui.speechResult.innerHTML = '⚠️ <strong>خطأ في التسميع:</strong> تلاوتك غير مطابقة للآية الحالية. تم إيقاف التسجيل للتصحيح.';
-            ui.speechResult.classList.add('show');
-            
-            // Add shake/error class for visual feedback
+          ayahErrorCount++;
+          
+          if (ayahErrorCount >= 3) {
+            highlightMistakes(text, referenceText);
+            ui.speechResult.innerHTML = '⚠️ <strong>تنبيه:</strong> تكرر الخطأ. تم عرض الكلمات (الأحمر: ناقص/خاطئ، الأخضر: صحيح).';
+          } else {
+            ui.speechResult.innerHTML = `⚠️ <strong>خطأ في التسميع:</strong> تلاوتك غير مطابقة بالكامل. المحاولة الخاطئة: ${ayahErrorCount}/3`;
             ui.quranDisplay.classList.add('recitation-error');
             setTimeout(() => {
               ui.quranDisplay.classList.remove('recitation-error');
             }, 1000);
           }
+          ui.speechResult.classList.add('show');
         }
       }
     }
@@ -1008,16 +1073,30 @@ const initApp = async () => {
   });
 
   window.addEventListener('speechend', (e) => {
-    // If Hide Text mode is active, and they were reciting, but they didn't match the current ayah
+    // If Hide Text mode is active, and they were reciting, but they didn't match the current ayah perfectly
     if (AppState.settings.hideTextMode && !correctTransitionTimeout) {
       const score = AppState.speech.latestScore || 0;
-      if (score < 0.70 && AppState.speech.detectedText) {
-        ui.speechResult.innerHTML = '⚠️ <strong>تنبيه:</strong> لم يتم مطابقة التلاوة بنسبة كافية. يرجى مراجعة الحفظ وإعادة المحاولة.';
+      const text = AppState.speech.detectedText || '';
+      const referenceText = AppState.current.ayah.text || '';
+      
+      const spokenWordsCount = text.trim().split(/\s+/).filter(Boolean).length;
+      const refWordsCount = referenceText.trim().split(/\s+/).filter(Boolean).length;
+      const isPerfect = score >= 0.95 && spokenWordsCount >= refWordsCount;
+
+      if (!isPerfect && text) {
+        ayahErrorCount++;
+        
+        if (ayahErrorCount >= 3) {
+          highlightMistakes(text, referenceText);
+          ui.speechResult.innerHTML = '⚠️ <strong>تنبيه:</strong> تكرر الخطأ. تم عرض الكلمات (الأحمر: ناقص/خاطئ، الأخضر: صحيح).';
+        } else {
+          ui.speechResult.innerHTML = `⚠️ <strong>تنبيه:</strong> تلاوتك غير مطابقة بالكامل. المحاولة الخاطئة: ${ayahErrorCount}/3`;
+          ui.quranDisplay.classList.add('recitation-error');
+          setTimeout(() => {
+            ui.quranDisplay.classList.remove('recitation-error');
+          }, 1000);
+        }
         ui.speechResult.classList.add('show');
-        ui.quranDisplay.classList.add('recitation-error');
-        setTimeout(() => {
-          ui.quranDisplay.classList.remove('recitation-error');
-        }, 1000);
       } else {
         ui.speechResult.classList.remove('show');
       }
@@ -1236,9 +1315,14 @@ const initApp = async () => {
   btnToggleText.addEventListener('click', () => {
     isTextHidden = !isTextHidden;
     applyTextVisibility();
-    if (!isTextHidden && correctTransitionTimeout) {
-      clearTimeout(correctTransitionTimeout);
-      correctTransitionTimeout = null;
+    if (!isTextHidden) {
+      if (correctTransitionTimeout) {
+        clearTimeout(correctTransitionTimeout);
+        correctTransitionTimeout = null;
+      }
+      ayahErrorCount = 0;
+      // Reload current ayah to clear any red/green highlights
+      loadAyah(AppState.current.ayah.id);
     }
   });
 
