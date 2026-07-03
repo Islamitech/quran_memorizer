@@ -21,6 +21,32 @@ export class TextNormalizer {
       'ق': 'قاف',
       'ن': 'نون'
     };
+    this.uthmaniToStandardMap = {
+      'الصلوة': 'الصلاة',
+      'الصلوت': 'الصلوات',
+      'الزكوة': 'الزكاة',
+      'السموت': 'السماوات',
+      'السموٰت': 'السماوات',
+      'ملك': 'مالك',
+      'الكتٰب': 'الكتاب',
+      'الكتب': 'الكتاب',
+      'سليمن': 'سليمان',
+      'إسحق': 'إسحاق',
+      'إسمعيل': 'إسماعيل',
+      'إبرهيم': 'إبراهيم',
+      'لقمن': 'لقمان',
+      'بينت': 'بينات',
+      'الظلمين': 'الظالمين',
+      'الظلمون': 'الظالمون',
+      'الكفرين': 'الكافرين',
+      'الكفرون': 'الكافرون',
+      'صبرين': 'صابرين',
+      'علمين': 'عالمين',
+      'العلمين': 'العالمين',
+      'عبدون': 'عابدون',
+      'عبدت': 'عبدتم',
+      'عبدن': 'عابدين'
+    };
   }
   
   normalize(text, options = {}) {
@@ -51,6 +77,11 @@ export class TextNormalizer {
       result = result.replace(/ئ/g, 'ي');
       result = result.replace(/ى/g, 'ي');
     }
+
+    // Normalize Uthmani spelling variants to standard spoken spellings
+    let finalWords = result.split(' ');
+    finalWords = finalWords.map(word => this.uthmaniToStandardMap[word] || word);
+    result = finalWords.join(' ');
     
     if (options.normalizeSpaces !== false) {
       result = result.replace(this.spaceNormalizer, ' ');
