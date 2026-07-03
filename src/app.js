@@ -731,7 +731,9 @@ const initApp = async () => {
   ui.btnViewTafsir.addEventListener('click', () => updateViewMode('tafsir'));
   ui.btnViewTranslation.addEventListener('click', () => updateViewMode('translation'));
 
-  // Speech listeners
+  // Speech listeners & testing mode transitions
+  let correctTransitionTimeout = null;
+
   ui.micBtn.addEventListener('click', () => {
     if(speechEngine.isRecording) {
       speechEngine.stop();
@@ -754,6 +756,57 @@ const initApp = async () => {
     if (referenceText && text) {
       const score = speechEngine.matchAlgo.calculateMatchScore(text, referenceText);
       AppState.speech.latestScore = score;
+
+      // Handle recitation testing mode (whole Surah recitation mode)
+      if (AppState.settings.hideTextMode) {
+        // If the score matches correctly (70% or more), reveal the ayah and auto-advance
+        if (score >= 0.70 && !correctTransitionTimeout) {
+          // 1. Reveal words of current active Ayah
+          ui.quranDisplay.classList.add('reveal-words');
+          ui.speechResult.innerHTML = '✔️ <strong>تسميع صحيح!</strong> نسبة المطابقة: ' + Math.round(score * 100) + '% - الانتقال للآية التالية...';
+          ui.speechResult.classList.add('show');
+          
+          // 2. Clear error class if any
+          ui.quranDisplay.classList.remove('recitation-error');
+          
+          // 3. Set timeout to transition to next Ayah and keep mic recording
+          correctTransitionTimeout = setTimeout(() => {
+            ui.quranDisplay.classList.remove('reveal-words');
+            correctTransitionTimeout = null;
+            
+            const next = parseInt(AppState.current.ayah.id) + 1;
+            if (next <= AppState.current.surah.ayahCount) {
+              transitionToAyahWithRecording(next);
+            } else {
+              speechEngine.stop(false);
+              ui.speechResult.innerHTML = '🎉 <strong>تهانينا!</strong> لقد أتممت تسميع السورة كاملة بنجاح!';
+              ui.speechResult.classList.add('show');
+              setTimeout(() => ui.speechResult.classList.remove('show'), 5000);
+            }
+          }, 1800);
+        } 
+        // If the user spoke a significant number of words, but match score is still low (Mistake/Block)
+        else if (!correctTransitionTimeout) {
+          const spokenWordsCount = text.trim().split(/\s+/).length;
+          const refWordsCount = referenceText.trim().split(/\s+/).length;
+          
+          // Block and alert if they spoke a minimum threshold of words but similarity is poor
+          if (spokenWordsCount >= Math.max(3, refWordsCount) && score < 0.50) {
+            // Stop recording immediately to prevent further recording
+            speechEngine.stop(false);
+            
+            // Show error message
+            ui.speechResult.innerHTML = '⚠️ <strong>خطأ في التسميع:</strong> تلاوتك غير مطابقة للآية الحالية. تم إيقاف التسجيل للتصحيح.';
+            ui.speechResult.classList.add('show');
+            
+            // Add shake/error class for visual feedback
+            ui.quranDisplay.classList.add('recitation-error');
+            setTimeout(() => {
+              ui.quranDisplay.classList.remove('recitation-error');
+            }, 1000);
+          }
+        }
+      }
     }
   });
 
@@ -911,8 +964,22 @@ const initApp = async () => {
   });
 
   window.addEventListener('speechend', (e) => {
-    // speechend is dispatched by SpeechEngine when recording fully stops
-    ui.speechResult.classList.remove('show');
+    // If Hide Text mode is active, and they were reciting, but they didn't match the current ayah
+    if (AppState.settings.hideTextMode && !correctTransitionTimeout) {
+      const score = AppState.speech.latestScore || 0;
+      if (score < 0.70 && AppState.speech.detectedText) {
+        ui.speechResult.innerHTML = '⚠️ <strong>تنبيه:</strong> لم يتم مطابقة التلاوة بنسبة كافية. يرجى مراجعة الحفظ وإعادة المحاولة.';
+        ui.speechResult.classList.add('show');
+        ui.quranDisplay.classList.add('recitation-error');
+        setTimeout(() => {
+          ui.quranDisplay.classList.remove('recitation-error');
+        }, 1000);
+      } else {
+        ui.speechResult.classList.remove('show');
+      }
+    } else {
+      ui.speechResult.classList.remove('show');
+    }
   });
 
   // Tour setup
@@ -1104,7 +1171,10 @@ const initApp = async () => {
       if (!styleTag) {
         styleTag = document.createElement('style');
         styleTag.id = 'hide-text-style-rule';
-        styleTag.innerHTML = '#current-ayah-display .word { display: none !important; }';
+        styleTag.innerHTML = `
+          #current-ayah-display .word { display: none !important; }
+          #tafsir-display, #translation-display { display: none !important; }
+        `;
         document.head.appendChild(styleTag);
       }
     } else {
@@ -1112,6 +1182,8 @@ const initApp = async () => {
       btnToggleText.style.backgroundColor = 'var(--bg-card, #fff)';
       btnToggleText.style.color = 'var(--text-primary, #1e293b)';
       if (styleTag) styleTag.remove();
+      // Ensure the display is cleared from reveal class
+      if (ui.quranDisplay) ui.quranDisplay.classList.remove('reveal-words');
     }
     AppState.settings.hideTextMode = isTextHidden;
     window.storageManager.save('quran_app_state', AppState);
@@ -1120,6 +1192,10 @@ const initApp = async () => {
   btnToggleText.addEventListener('click', () => {
     isTextHidden = !isTextHidden;
     applyTextVisibility();
+    if (!isTextHidden && correctTransitionTimeout) {
+      clearTimeout(correctTransitionTimeout);
+      correctTransitionTimeout = null;
+    }
   });
 
   applyTextVisibility();
