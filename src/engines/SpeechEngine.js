@@ -109,6 +109,9 @@ export class SpeechEngine {
         try {
           const AudioCtx = window.AudioContext || window.webkitAudioContext;
           this.liveEchoCtx = new AudioCtx();
+          if (this.liveEchoCtx.state === 'suspended') {
+            await this.liveEchoCtx.resume();
+          }
           this.liveEchoSource = this.liveEchoCtx.createMediaStreamSource(this.activeStream);
           
           const dryNode = this.liveEchoCtx.createGain();
@@ -157,7 +160,8 @@ export class SpeechEngine {
       };
       
       this.mediaRecorder.onstop = () => {
-        const audioBlob = new Blob(this.audioChunks, { type: 'audio/webm' });
+        const mimeType = this.mediaRecorder.mimeType || 'audio/webm';
+        const audioBlob = new Blob(this.audioChunks, { type: mimeType });
         const recordedSurah = this.currentRecordingSurah;
         const recordedAyah = this.currentRecordingAyah;
         const recordedText = this.currentRecordingText;

@@ -1364,6 +1364,9 @@ const initApp = async () => {
       // Play with Mosque Echo (with fallback)
       const AudioContextClass = window.AudioContext || window.webkitAudioContext;
       currentPlayingCtx = new AudioContextClass();
+      if (currentPlayingCtx.state === 'suspended') {
+        try { await currentPlayingCtx.resume(); } catch(e) {}
+      }
       
       const reader = new FileReader();
       reader.onload = async function() {
