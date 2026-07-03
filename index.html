@@ -415,6 +415,90 @@
     </div>
   </div>
 
+  <!-- Help & Guide Modal -->
+  <div id="modal-help" class="modal-card" style="display: none; width: 95%; max-width: 550px; max-height: 70vh;">
+    <div class="modal-header">
+      <h2 style="font-family: var(--font-arabic); display: flex; align-items: center; gap: 8px; font-size: 1.25rem;">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: var(--accent-primary);"><circle cx="12" cy="12" r="10"></circle><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
+        دليل مساعدة محفّظ القرآن
+      </h2>
+      <button id="btn-close-help" class="icon-btn" aria-label="إغلاق دليل المساعدة">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+      </button>
+    </div>
+    
+    <!-- Tab Controls -->
+    <div class="help-tabs" style="display: flex; border-bottom: 1px solid var(--border-light); background: var(--bg-page);">
+      <button id="tab-help-features" class="help-tab-btn active" style="flex: 1; padding: 12px; background: none; border: none; border-bottom: 3px solid var(--accent-primary); font-family: var(--font-arabic); font-weight: 700; cursor: pointer; color: var(--text-primary);">دليل الميزات 📖</button>
+      <button id="tab-help-tour" class="help-tab-btn" style="flex: 1; padding: 12px; background: none; border: none; border-bottom: 3px solid transparent; font-family: var(--font-arabic); font-weight: 500; cursor: pointer; color: var(--text-secondary);">الجولة التعليمية 🚀</button>
+    </div>
+
+    <div class="modal-body" style="overflow-y: auto; padding: 20px; direction: rtl; text-align: right; max-height: calc(70vh - 120px);">
+      <!-- Tab 1 Content: Features Guide -->
+      <div id="help-content-features" style="display: flex; flex-direction: column; gap: 16px;">
+        
+        <div style="background: #f0fdf4; border-right: 4px solid #22c55e; padding: 12px; border-radius: 8px;">
+          <h3 style="font-family: var(--font-arabic); font-size: 1rem; color: #166534; margin-bottom: 6px; font-weight: 700;">🎤 التسميع الذكي والتصحيح التلقائي</h3>
+          <p style="font-size: 0.88rem; color: #1e3a8a; line-height: 1.6; margin: 0;">
+            اضغط على الميكروفون وابدأ القراءة. يقارن التطبيق صوتك بالآية ويعطيك تقييماً بالألوان:
+            <br>🟢 <strong>أخضر:</strong> نطق صحيح ومكتمل.
+            <br>🟠 <strong>برتقالي:</strong> خطأ خفيف في النطق أو حكم تجويدي.
+            <br>🔴 <strong>أحمر:</strong> نسيان أو خطأ في الحفظ يحتاج تصحيح.
+          </p>
+        </div>
+
+        <div style="background: #fffbeb; border-right: 4px solid #f59e0b; padding: 12px; border-radius: 8px;">
+          <h3 style="font-family: var(--font-arabic); font-size: 1rem; color: #92400e; margin-bottom: 6px; font-weight: 700;">🧒 وضع الأطفال والتحفيز المرح</h3>
+          <p style="font-size: 0.88rem; color: #1e3a8a; line-height: 1.6; margin: 0;">
+            فعل وضع الأطفال (أيقونة الوجه المبتسم 🙂) لتحويل الواجهة لألوان مبهجة. عند التسميع الصحيح، يتم إطلاق مؤثرات كرتونية مشجعة مع انفجار النجوم (⭐🎈). وعند الخطأ، يظهر تشجيع كرتوني ودود لحث الطفل على المحاولة مجدداً دون إحباط.
+          </p>
+        </div>
+
+        <div style="background: #f0f9ff; border-right: 4px solid #0ea5e9; padding: 12px; border-radius: 8px;">
+          <h3 style="font-family: var(--font-arabic); font-size: 1rem; color: #0369a1; margin-bottom: 6px; font-weight: 700;">📻 صدى الصوت (صدى المسجد)</h3>
+          <p style="font-size: 0.88rem; color: #1e3a8a; line-height: 1.6; margin: 0;">
+            قم بتفعيل خيار "صدى" بجوار زر الميكروفون للاستماع إلى تلاوتك وصوتك بصدى رائع يحاكي تلاوة المساجد ومكبرات الصوت، مما يعطي تجربة ممتعة ومشجعة أثناء الحفظ والتسميع الذاتي.
+          </p>
+        </div>
+
+        <div style="background: #faf5ff; border-right: 4px solid #a855f7; padding: 12px; border-radius: 8px;">
+          <h3 style="font-family: var(--font-arabic); font-size: 1rem; color: #6b21a8; margin-bottom: 6px; font-weight: 700;">🎧 وضع الاستماع والتشغيل المتتالي</h3>
+          <p style="font-size: 0.88rem; color: #1e3a8a; line-height: 1.6; margin: 0;">
+            اضغط على (وضع الاستماع 🎧) من القائمة العلوية لتحديد سور أو آيات متعددة ليتم تشغيلها متتالية بشكل تلقائي مع إخفاء أدوات التسميع، مما يسهل المراجعة والتركيز البصري والسمعي.
+          </p>
+        </div>
+
+        <div style="background: #fdf2f8; border-right: 4px solid #ec4899; padding: 12px; border-radius: 8px;">
+          <h3 style="font-family: var(--font-arabic); font-size: 1rem; color: #9d174d; margin-bottom: 6px; font-weight: 700;">📶 العمل بالكامل دون اتصال بالإنترنت (Offline)</h3>
+          <p style="font-size: 0.88rem; color: #1e3a8a; line-height: 1.6; margin: 0;">
+            يتم حفظ السور والأصوات التي تستمع إليها تلقائياً في ذاكرة جهازك. يمكنك إغلاق الإنترنت تماماً وتشغيل التلاوات والتسميع والبحث في أي وقت ومكان دون الحاجة لأي اتصال!
+          </p>
+        </div>
+
+        <div style="background: #f0fdfa; border-right: 4px solid #0d9488; padding: 12px; border-radius: 8px;">
+          <h3 style="font-family: var(--font-arabic); font-size: 1rem; color: #115e59; margin-bottom: 6px; font-weight: 700;">🎓 لوحة ونظام المعلم الذكي</h3>
+          <p style="font-size: 0.88rem; color: #1e3a8a; line-height: 1.6; margin: 0;">
+            يمكنك إرسال تسجيل تلاوتك للآية لمعلمك ليقوم بتقييمها لك وكتابة الملاحظات. كما يمكنك فتح "لوحة المعلم" (أيقونة الحساب بالعلوي 👥) لمراجعة قائمة التسميعات المرسلة من الطلاب وتقييمها.
+          </p>
+        </div>
+
+      </div>
+
+      <!-- Tab 2 Content: Start Tour -->
+      <div id="help-content-tour" style="display: none; flex-direction: column; align-items: center; text-align: center; gap: 20px; padding: 20px 0;">
+        <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="var(--accent-primary)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+        <h3 style="font-family: var(--font-arabic); font-size: 1.2rem; color: var(--text-primary); font-weight: 700; margin: 0;">ابدأ جولة تفاعلية سريعة</h3>
+        <p style="font-size: 0.95rem; color: var(--text-secondary); line-height: 1.7; max-width: 400px; margin: 0;">
+          هل تفضل التعرف على عناصر الشاشة والأزرار عملياً؟ دعنا نأخذك في جولة تعليمية سريعة خطوة بخطوة لشرح كل زر على الشاشة الرئيسية وتوضيح وظيفته!
+        </p>
+        <button id="btn-start-interactive-tour" style="font-family: var(--font-arabic); font-size: 1rem; font-weight: 700; color: white; background: var(--accent-primary); border: none; padding: 12px 32px; border-radius: 12px; cursor: pointer; box-shadow: 0 4px 12px rgba(255, 159, 67, 0.3); transition: all 0.2s ease;">
+          ابدأ الجولة التعليمية الآن 🚀
+        </button>
+      </div>
+
+    </div>
+  </div>
+
   <script type="module" src="./src/app.js"></script>
 </body>
 </html>
