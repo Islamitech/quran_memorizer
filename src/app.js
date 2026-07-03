@@ -55,6 +55,10 @@ const initApp = async () => {
       AppState.userRole = savedState.userRole;
     }
   }
+  
+  if (AppState.settings.childMode) {
+    document.body.classList.add('theme-child');
+  }
 
   const ui = {
     audio: document.getElementById('audio-player'),
@@ -915,6 +919,107 @@ const initApp = async () => {
     }
   });
 
+  // --- المؤثرات الصوتية والبصرية لتشجيع الأطفال في وضع التسميع ---
+  function playChildSuccessSound() {
+    try {
+      const AudioCtx = window.AudioContext || window.webkitAudioContext;
+      if (!AudioCtx) return;
+      const ctx = new AudioCtx();
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      
+      osc.type = 'sine';
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      
+      const now = ctx.currentTime;
+      
+      // نغمتين متتاليتين صاعدتين ومبهجتين (أصوات ألعاب فيديو)
+      osc.frequency.setValueAtTime(523.25, now); // C5
+      osc.frequency.setValueAtTime(659.25, now + 0.08); // E5
+      osc.frequency.setValueAtTime(783.99, now + 0.16); // G5
+      osc.frequency.setValueAtTime(1046.50, now + 0.24); // C6
+      
+      gain.gain.setValueAtTime(0.12, now);
+      gain.gain.exponentialRampToValueAtTime(0.005, now + 0.45);
+      
+      osc.start(now);
+      osc.stop(now + 0.45);
+    } catch(e) {
+      console.warn("Child sound context error:", e);
+    }
+  }
+
+  function playChildOopsSound() {
+    try {
+      const AudioCtx = window.AudioContext || window.webkitAudioContext;
+      if (!AudioCtx) return;
+      const ctx = new AudioCtx();
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      
+      osc.type = 'triangle'; // صوت دافئ وناعم وغير مخيف
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      
+      const now = ctx.currentTime;
+      
+      // نغمة كرتونية لطيفة للتشجيع على المحاولة من جديد
+      osc.frequency.setValueAtTime(329.63, now); // E4
+      osc.frequency.exponentialRampToValueAtTime(220.00, now + 0.22); // A3
+      
+      gain.gain.setValueAtTime(0.15, now);
+      gain.gain.exponentialRampToValueAtTime(0.005, now + 0.25);
+      
+      osc.start(now);
+      osc.stop(now + 0.25);
+    } catch(e) {
+      console.warn("Child sound context error:", e);
+    }
+  }
+
+  function triggerEmojiExplosion() {
+    try {
+      const container = document.createElement('div');
+      container.style.position = 'fixed';
+      container.style.top = '0';
+      container.style.left = '0';
+      container.style.width = '100vw';
+      container.style.height = '100vh';
+      container.style.pointerEvents = 'none';
+      container.style.zIndex = '9999';
+      document.body.appendChild(container);
+      
+      const emojis = ['⭐', '🎉', '🎈', '✨', '🌸', '🥳', '🌈', '👏', '🏆', '💫'];
+      const count = 30;
+      
+      for (let i = 0; i < count; i++) {
+        const el = document.createElement('span');
+        el.textContent = emojis[Math.floor(Math.random() * emojis.length)];
+        el.style.position = 'absolute';
+        el.style.left = '50%';
+        el.style.top = '60%';
+        el.style.fontSize = `${Math.floor(Math.random() * 20) + 20}px`;
+        el.style.transition = 'all 1.2s cubic-bezier(0.25, 1, 0.5, 1)';
+        el.style.opacity = '1';
+        
+        const angle = Math.random() * Math.PI * 2;
+        const distance = Math.random() * 250 + 60;
+        const tx = Math.cos(angle) * distance;
+        const ty = Math.sin(angle) * distance - 150;
+        
+        container.appendChild(el);
+        
+        requestAnimationFrame(() => {
+          el.style.transform = `translate(${tx}px, ${ty}px) scale(0)`;
+          el.style.opacity = '0';
+        });
+      }
+      
+      setTimeout(() => container.remove(), 1200);
+    } catch(e) {}
+  }
+
   window.addEventListener('speechresult', (e) => {
     const { text } = e.detail;
     AppState.speech.detectedText = text;
@@ -940,11 +1045,30 @@ const initApp = async () => {
 
       // Handle recitation testing mode (whole Surah recitation mode)
       if (AppState.settings.hideTextMode) {
+        const isChildMode = document.body.classList.contains('theme-child');
+
         // If the score is correct, reveal the ayah and auto-advance
         if (isCorrect && !correctTransitionTimeout) {
+          // Play sounds & rewards if child mode is active
+          if (isChildMode) {
+            playChildSuccessSound();
+            triggerEmojiExplosion();
+          }
+
           // 1. Reveal words of current active Ayah
           ui.quranDisplay.classList.add('reveal-words');
-          ui.speechResult.innerHTML = '✔️ <strong>تسميع صحيح ومقبول!</strong> - الانتقال للآية التالية...';
+          
+          if (isChildMode) {
+            const successMsgs = [
+              '🏆✨ <strong>أنت بطل الحفظ المتميز!</strong> تبارك الرحمن قراءة رائعة وممتازة...',
+              '🌟🎈 <strong>ما شاء الله!</strong> قراءتك صحيحة وجميلة جداً يا بطل...',
+              '⭐🎉 <strong>أحسنت يا ذكي!</strong> تلاوة صحيحة، استمر في هذا الأداء الرائع...',
+              '🌈👏 <strong>ممتاز جداً!</strong> حافظ على هذا المستوى الجميل يا بطل...'
+            ];
+            ui.speechResult.innerHTML = successMsgs[Math.floor(Math.random() * successMsgs.length)];
+          } else {
+            ui.speechResult.innerHTML = '✔️ <strong>تسميع صحيح ومقبول!</strong> - الانتقال للآية التالية...';
+          }
           ui.speechResult.classList.add('show');
           
           // 2. Clear error class if any
@@ -960,7 +1084,11 @@ const initApp = async () => {
               transitionToAyahWithRecording(next);
             } else {
               speechEngine.stop(false);
-              ui.speechResult.innerHTML = '🎉 <strong>تهانينا!</strong> لقد أتممت تسميع السورة كاملة بنجاح!';
+              if (isChildMode) {
+                ui.speechResult.innerHTML = '🎉🏆 <strong>تهانينا يا بطل الأبطال!</strong> لقد أتممت تسميع السورة كاملة بنجاح! 👑🎈';
+              } else {
+                ui.speechResult.innerHTML = '🎉 <strong>تهانينا!</strong> لقد أتممت تسميع السورة كاملة بنجاح!';
+              }
               ui.speechResult.classList.add('show');
               setTimeout(() => ui.speechResult.classList.remove('show'), 5000);
             }
@@ -976,18 +1104,31 @@ const initApp = async () => {
           // Always unmark as mastered since there are errors in recitation
           markAyahAsUnmastered(AppState.current.surah.id, AppState.current.ayah.id);
           
-          if (ayahErrorCount >= 3) {
-            highlightMistakes(text, referenceText);
-            ui.speechResult.innerHTML = '⚠️ <strong>تحليل التسميع (أخطاء الحفظ والتجويد):</strong> تم تلوين الكلمات لمساعدتك لتصحيح التلاوة:<br>' +
-              '<span style="color: #22c55e; font-weight: bold; margin: 0 5px;">🟢 صحيح</span> | ' +
-              '<span style="color: #f97316; font-weight: bold; margin: 0 5px;">🟠 خطأ نطق/تجويد</span> | ' +
-              '<span style="color: #ef4444; font-weight: bold; margin: 0 5px;">🔴 خطأ حفظ (نسيان)</span>';
-          } else {
-            ui.speechResult.innerHTML = `⚠️ <strong>خطأ في التسميع:</strong> تلاوتك غير مطابقة بالكامل. المحاولة الخاطئة: ${ayahErrorCount}/3`;
+          if (isChildMode) {
+            playChildOopsSound();
             ui.quranDisplay.classList.add('recitation-error');
-            setTimeout(() => {
-              ui.quranDisplay.classList.remove('recitation-error');
-            }, 1000);
+            setTimeout(() => ui.quranDisplay.classList.remove('recitation-error'), 1000);
+
+            const encouragements = [
+              '💫🦁 <strong>لا بأس يا بطل!</strong> حاول مرة أخرى بصوتك الجميل وسوف تنجح بالتأكيد...',
+              '🦄🌸 <strong>حاولة رائعة!</strong> أنت قريب جداً، أعد المحاولة يا ذكي...',
+              '🎈❤️ <strong>أنت شجاع وتستطيع فعلها!</strong> ركز جيداً وأعد قراءتها...'
+            ];
+            ui.speechResult.innerHTML = encouragements[Math.floor(Math.random() * encouragements.length)];
+          } else {
+            if (ayahErrorCount >= 3) {
+              highlightMistakes(text, referenceText);
+              ui.speechResult.innerHTML = '⚠️ <strong>تحليل التسميع (أخطاء الحفظ والتجويد):</strong> تم تلوين الكلمات لمساعدتك لتصحيح التلاوة:<br>' +
+                '<span style="color: #22c55e; font-weight: bold; margin: 0 5px;">🟢 صحيح</span> | ' +
+                '<span style="color: #f97316; font-weight: bold; margin: 0 5px;">🟠 خطأ نطق/تجويد</span> | ' +
+                '<span style="color: #ef4444; font-weight: bold; margin: 0 5px;">🔴 خطأ حفظ (نسيان)</span>';
+            } else {
+              ui.speechResult.innerHTML = `⚠️ <strong>خطأ في التسميع:</strong> تلاوتك غير مطابقة بالكامل. المحاولة الخاطئة: ${ayahErrorCount}/3`;
+              ui.quranDisplay.classList.add('recitation-error');
+              setTimeout(() => {
+                ui.quranDisplay.classList.remove('recitation-error');
+              }, 1000);
+            }
           }
           ui.speechResult.classList.add('show');
         }
@@ -1172,18 +1313,33 @@ const initApp = async () => {
         // Mark as unmastered because there's an active error in recitation
         markAyahAsUnmastered(AppState.current.surah.id, AppState.current.ayah.id);
         
-        if (ayahErrorCount >= 3) {
-          highlightMistakes(text, referenceText);
-          ui.speechResult.innerHTML = '⚠️ <strong>تحليل التسميع (أخطاء الحفظ والتجويد):</strong> تم تلوين الكلمات لمساعدتك لتصحيح التلاوة:<br>' +
-            '<span style="color: #22c55e; font-weight: bold; margin: 0 5px;">🟢 صحيح</span> | ' +
-            '<span style="color: #f97316; font-weight: bold; margin: 0 5px;">🟠 خطأ نطق/تجويد</span> | ' +
-            '<span style="color: #ef4444; font-weight: bold; margin: 0 5px;">🔴 خطأ حفظ (نسيان)</span>';
-        } else {
-          ui.speechResult.innerHTML = `⚠️ <strong>تنبيه:</strong> تلاوتك غير مطابقة بالكامل. المحاولة الخاطئة: ${ayahErrorCount}/3`;
+        const isChildMode = document.body.classList.contains('theme-child');
+        
+        if (isChildMode) {
+          playChildOopsSound();
           ui.quranDisplay.classList.add('recitation-error');
-          setTimeout(() => {
-            ui.quranDisplay.classList.remove('recitation-error');
-          }, 1000);
+          setTimeout(() => ui.quranDisplay.classList.remove('recitation-error'), 1000);
+
+          const encouragements = [
+            '💫🦁 <strong>لا بأس يا بطل!</strong> حاول مرة أخرى بصوتك الجميل وسوف تنجح بالتأكيد...',
+            '🦄🌸 <strong>حاولة رائعة!</strong> أنت قريب جداً، أعد المحاولة يا ذكي...',
+            '🎈❤️ <strong>أنت شجاع وتستطيع فعلها!</strong> ركز جيداً وأعد قراءتها...'
+          ];
+          ui.speechResult.innerHTML = encouragements[Math.floor(Math.random() * encouragements.length)];
+        } else {
+          if (ayahErrorCount >= 3) {
+            highlightMistakes(text, referenceText);
+            ui.speechResult.innerHTML = '⚠️ <strong>تحليل التسميع (أخطاء الحفظ والتجويد):</strong> تم تلوين الكلمات لمساعدتك لتصحيح التلاوة:<br>' +
+              '<span style="color: #22c55e; font-weight: bold; margin: 0 5px;">🟢 صحيح</span> | ' +
+              '<span style="color: #f97316; font-weight: bold; margin: 0 5px;">🟠 خطأ نطق/تجويد</span> | ' +
+              '<span style="color: #ef4444; font-weight: bold; margin: 0 5px;">🔴 خطأ حفظ (نسيان)</span>';
+          } else {
+            ui.speechResult.innerHTML = `⚠️ <strong>تنبيه:</strong> تلاوتك غير مطابقة بالكامل. المحاولة الخاطئة: ${ayahErrorCount}/3`;
+            ui.quranDisplay.classList.add('recitation-error');
+            setTimeout(() => {
+              ui.quranDisplay.classList.remove('recitation-error');
+            }, 1000);
+          }
         }
         ui.speechResult.classList.add('show');
       } else {
@@ -1333,10 +1489,15 @@ const initApp = async () => {
 
   // Child Mode Toggle
   if (ui.btnChildMode) {
+    if (document.body.classList.contains('theme-child')) {
+      ui.btnChildMode.style.color = 'var(--accent-primary)';
+    }
+
     ui.btnChildMode.addEventListener('click', () => {
       document.body.classList.toggle('theme-child');
       
       const isChildMode = document.body.classList.contains('theme-child');
+      AppState.settings.childMode = isChildMode;
       if (isChildMode) {
         ui.btnChildMode.style.color = 'var(--accent-primary)';
       } else {
