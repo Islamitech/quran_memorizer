@@ -394,7 +394,7 @@
         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
       </button>
     </div>
-    <div class="modal-body" style="overflow-y: auto; padding: 20px; direction: rtl; text-align: right;">
+    <div class="modal-body" style="overflow-y: auto; padding: 20px; direction: rtl; text-align: right; max-height: calc(60vh - 70px);">
       <!-- Minimized Quran reference text -->
       <div id="tafsir-modal-quran-text" style="font-family: var(--font-quran); font-size: 1.6rem; line-height: 1.8; text-align: center; color: var(--accent-primary); padding: 12px; background: var(--bg-page); border-radius: 12px; margin-bottom: 20px; border-right: 4px solid var(--accent-primary);"></div>
       
@@ -407,7 +407,7 @@
         </div>
         
         <!-- Translation Display -->
-        <div id="modal-translation-section">
+        <div id="modal-translation-section" style="padding-bottom: 24px;">
           <h3 style="font-family: var(--font-arabic); font-size: 1rem; color: var(--text-primary); margin-bottom: 8px; font-weight: 700; border-bottom: 2px solid var(--accent-primary-light); padding-bottom: 4px; display: inline-block;">English Translation:</h3>
           <p id="translation-display" style="font-family: 'Inter', sans-serif; font-size: 0.95rem; color: var(--text-secondary); line-height: 1.6; direction: ltr; text-align: left; margin: 0;"></p>
         </div>
