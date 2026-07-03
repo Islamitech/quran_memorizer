@@ -1257,13 +1257,27 @@ const initApp = async () => {
       const audioBase64 = reader.result;
       const surahName = surahsData.find(s => s.id === surahId)?.name || AppState.current.surah.name;
       
+      // Get the original Quranic text of the ayah from cache
+      let ayahText = '';
+      const cacheKey = `surah_${surahId}`;
+      const cached = quranAPI.cache.get(cacheKey);
+      if (cached && cached.arabic) {
+        const ayahData = cached.arabic.find(a => a.id == ayahId);
+        if (ayahData) {
+          ayahText = ayahData.text;
+        }
+      }
+      if (!ayahText && AppState.current.surah.id === surahId && AppState.current.ayah.id === ayahId) {
+        ayahText = AppState.current.ayah.text;
+      }
+      
       const report = {
         id: Date.now(),
         timestamp: Date.now(),
         surahId: surahId,
         surahName: surahName,
         ayahNumber: ayahId,
-        text: detectedText || 'تم تسجيل الصوت لتسميعه للمعلم',
+        text: detectedText || ayahText || 'تم تسجيل الصوت لتسميعه للمعلم',
         score: score || 0,
         audioBase64: audioBase64
       };
