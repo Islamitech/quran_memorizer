@@ -633,6 +633,11 @@ const initApp = async () => {
       ui.speechResult.classList.add('show');
     }
     
+    isRecitationTransitioning = true;
+    setTimeout(() => {
+      isRecitationTransitioning = false;
+    }, 1200); // 1.2s safety window to allow speech engine to completely restart and ignore any previous trailing words
+    
     loadAyah(targetAyah);
   }
 
@@ -764,6 +769,7 @@ const initApp = async () => {
 
   // Speech listeners & testing mode transitions
   let correctTransitionTimeout = null;
+  let isRecitationTransitioning = false;
 
   function markAyahAsMastered(surahId, ayahId) {
     if (!surahId || !ayahId) return;
@@ -1041,6 +1047,7 @@ const initApp = async () => {
   }
 
   window.addEventListener('speechresult', (e) => {
+    if (isRecitationTransitioning) return;
     const { text } = e.detail;
     AppState.speech.detectedText = text;
     
@@ -1069,6 +1076,7 @@ const initApp = async () => {
 
         // If the score is correct, reveal the ayah and auto-advance
         if (isCorrect && !correctTransitionTimeout) {
+          isRecitationTransitioning = true;
           // Play sounds & rewards if child mode is active
           if (isChildMode) {
             playChildSuccessSound();
@@ -1317,6 +1325,7 @@ const initApp = async () => {
   });
 
   window.addEventListener('speechend', (e) => {
+    if (isRecitationTransitioning) return;
     // If Hide Text mode is active, and they were reciting, but they didn't match the current ayah perfectly
     if (AppState.settings.hideTextMode && !correctTransitionTimeout) {
       const score = AppState.speech.latestScore || 0;
