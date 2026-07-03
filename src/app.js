@@ -771,6 +771,17 @@ const initApp = async () => {
   let correctTransitionTimeout = null;
   let isRecitationTransitioning = false;
 
+  // Google Analytics Event Tracking Helper
+  function trackAnalyticsEvent(eventName, params = {}) {
+    if (typeof gtag === 'function') {
+      try {
+        gtag('event', eventName, params);
+      } catch (err) {
+        console.warn("Analytics event tracking failed:", err);
+      }
+    }
+  }
+
   function markAyahAsMastered(surahId, ayahId) {
     if (!surahId || !ayahId) return;
     if (!AppState.memorization.mastered[surahId]) {
@@ -1066,6 +1077,12 @@ const initApp = async () => {
       // Mark as mastered if correct, otherwise mark as unmastered (for logical accuracy)
       if (isCorrect) {
         markAyahAsMastered(AppState.current.surah.id, AppState.current.ayah.id);
+        trackAnalyticsEvent('recitation_success', {
+          surah_id: AppState.current.surah.id,
+          surah_name: AppState.current.surah.name,
+          ayah_id: AppState.current.ayah.id,
+          score: score
+        });
       } else {
         markAyahAsUnmastered(AppState.current.surah.id, AppState.current.ayah.id);
       }
@@ -1128,6 +1145,14 @@ const initApp = async () => {
           speechEngine.stop(false);
           
           ayahErrorCount++;
+          
+          trackAnalyticsEvent('recitation_error', {
+            surah_id: AppState.current.surah.id,
+            surah_name: AppState.current.surah.name,
+            ayah_id: AppState.current.ayah.id,
+            error_count: ayahErrorCount,
+            score: score
+          });
           
           // Always unmark as mastered since there are errors in recitation
           markAyahAsUnmastered(AppState.current.surah.id, AppState.current.ayah.id);
@@ -1535,6 +1560,8 @@ const initApp = async () => {
       } else {
         ui.btnChildMode.style.color = '';
       }
+      
+      trackAnalyticsEvent('toggle_child_mode', { enabled: isChildMode });
     });
   }
 
