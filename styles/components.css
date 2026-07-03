@@ -171,7 +171,7 @@ select:focus {
   flex-direction: column;
   gap: 12px;
   box-shadow: 0 -4px 12px rgba(0,0,0,0.03);
-  z-index: 100;
+  z-index: 1005;
 }
 
 /* Timeline */
