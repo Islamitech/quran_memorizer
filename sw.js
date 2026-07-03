@@ -1,6 +1,6 @@
 // sw.js - Service Worker المتقدم
 
-const CACHE_VERSION = 'v41';
+const CACHE_VERSION = 'v42';
 const CACHE_NAMES = {
   static: `static-${CACHE_VERSION}`,
   audio: `audio-${CACHE_VERSION}`,
@@ -94,6 +94,9 @@ self.addEventListener('fetch', (event) => {
     // Bypass service worker for audio to prevent 206 Partial Content caching issues
     return;
   } else if (url.pathname.includes('/api/')) {
+    strategy = STRATEGIES['network-first'];
+  } else if (event.request.mode === 'navigate' || url.pathname === '/' || url.pathname.endsWith('index.html')) {
+    // Navigate/HTML requests must be network-first to get updates instantly when online
     strategy = STRATEGIES['network-first'];
   } else {
     strategy = STRATEGIES['cache-first'];
