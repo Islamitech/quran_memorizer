@@ -384,6 +384,17 @@ const initApp = async () => {
 
     // Display words
     ui.quranDisplay.innerHTML = '';
+    
+    // Add size modifier classes based on character and word count to prevent vertical overflow
+    const charCount = ayahData.text.length;
+    const wordCount = ayahData.words.length;
+    ui.quranDisplay.classList.remove('long-ayah', 'very-long-ayah');
+    if (charCount > 100 || wordCount > 15) {
+      ui.quranDisplay.classList.add('very-long-ayah');
+    } else if (charCount > 55 || wordCount > 9) {
+      ui.quranDisplay.classList.add('long-ayah');
+    }
+
     ayahData.words.forEach(word => {
       const span = document.createElement('span');
       span.className = 'word';
