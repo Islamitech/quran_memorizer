@@ -961,8 +961,8 @@ const initApp = async () => {
             }
           }, 1800);
         }
-        // If user spoke a significant number of words but it's not correct (Mistake)
-        else if (!correctTransitionTimeout && spokenWordsCount >= refWordsCount) {
+        // If user spoke a significant number of words (with a safe buffer for tartil) but it's not correct (Mistake)
+        else if (!correctTransitionTimeout && spokenWordsCount >= Math.max(refWordsCount + 5, Math.ceil(refWordsCount * 1.5))) {
           // Stop recording to prevent extra recording and let them fix
           speechEngine.stop(false);
           
