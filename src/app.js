@@ -1688,30 +1688,31 @@ const initApp = async () => {
   let isTextHidden = savedState?.settings?.hideTextMode || false;
 
   const applyTextVisibility = () => {
-    let styleTag = document.getElementById('hide-text-style-rule');
+    const basmalah = document.getElementById('basmalah-container');
+    const tafsirDisplay = document.getElementById('tafsir-display');
+    const translationDisplay = document.getElementById('translation-display');
+    
     if (isTextHidden) {
       if (ui.btnToggleTextMinimal) {
         ui.btnToggleTextMinimal.classList.add('active');
         if (ui.eyeIconOpen) ui.eyeIconOpen.style.display = 'none';
         if (ui.eyeIconClosed) ui.eyeIconClosed.style.display = 'block';
       }
-      if (!styleTag) {
-        styleTag = document.createElement('style');
-        styleTag.id = 'hide-text-style-rule';
-        styleTag.innerHTML = `
-          #basmalah-container { display: none !important; }
-          #current-ayah-display .word { display: none !important; }
-          #tafsir-display, #translation-display { display: none !important; }
-        `;
-        document.head.appendChild(styleTag);
-      }
+      if (ui.quranDisplay) ui.quranDisplay.classList.add('text-hidden');
+      if (basmalah) basmalah.classList.add('text-hidden');
+      if (tafsirDisplay) tafsirDisplay.classList.add('text-hidden');
+      if (translationDisplay) translationDisplay.classList.add('text-hidden');
     } else {
       if (ui.btnToggleTextMinimal) {
         ui.btnToggleTextMinimal.classList.remove('active');
         if (ui.eyeIconOpen) ui.eyeIconOpen.style.display = 'block';
         if (ui.eyeIconClosed) ui.eyeIconClosed.style.display = 'none';
       }
-      if (styleTag) styleTag.remove();
+      if (ui.quranDisplay) ui.quranDisplay.classList.remove('text-hidden');
+      if (basmalah) basmalah.classList.remove('text-hidden');
+      if (tafsirDisplay) tafsirDisplay.classList.remove('text-hidden');
+      if (translationDisplay) translationDisplay.classList.remove('text-hidden');
+      
       // Ensure the display is cleared from reveal class
       if (ui.quranDisplay) ui.quranDisplay.classList.remove('reveal-words');
     }

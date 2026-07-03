@@ -895,10 +895,24 @@ input[type="range"] {
 }
 
 /* Hide Text Mode & Recitation testing animations */
-#current-ayah-display.reveal-words .word {
+#basmalah-container.text-hidden {
+  display: none !important;
+}
+
+#current-ayah-display.text-hidden .word {
+  display: none !important;
+}
+
+#current-ayah-display.reveal-words .word,
+#current-ayah-display.text-hidden.reveal-words .word {
   display: inline-block !important;
   color: var(--accent-success, #10b981) !important;
   animation: reveal-pulse 0.5s ease-out;
+}
+
+#tafsir-display.text-hidden,
+#translation-display.text-hidden {
+  display: none !important;
 }
 
 #current-ayah-display.recitation-error {
