@@ -312,9 +312,9 @@ input[type="range"] {
   animation: pop-scale 1.5s infinite ease-in-out;
 }
 
-/* Pulsating ripple wave 1 */
-.mic-btn-minimal.listening::before {
-  content: '';
+/* Pulsating ripple waves */
+.mic-ripple {
+  display: none;
   position: absolute;
   top: -2px;
   left: -2px;
@@ -322,25 +322,22 @@ input[type="range"] {
   bottom: -2px;
   border: 1.5px solid var(--accent-danger, #ef4444);
   border-radius: 50%;
-  animation: ripple-pulse 1.8s cubic-bezier(0.24, 0, 0.38, 1) infinite;
-  opacity: 0.8;
   pointer-events: none;
+  opacity: 0.8;
+  z-index: 1;
 }
 
-/* Pulsating ripple wave 2 */
-.mic-btn-minimal.listening::after {
-  content: '';
-  position: absolute;
-  top: -2px;
-  left: -2px;
-  right: -2px;
-  bottom: -2px;
-  border: 1.5px solid var(--accent-danger, #ef4444);
-  border-radius: 50%;
+.mic-btn-minimal.listening .mic-ripple {
+  display: block;
+}
+
+.mic-btn-minimal.listening .ripple-1 {
+  animation: ripple-pulse 1.8s cubic-bezier(0.24, 0, 0.38, 1) infinite;
+}
+
+.mic-btn-minimal.listening .ripple-2 {
   animation: ripple-pulse 1.8s cubic-bezier(0.24, 0, 0.38, 1) infinite;
   animation-delay: 0.6s;
-  opacity: 0.8;
-  pointer-events: none;
 }
 
 @keyframes pop-scale {
