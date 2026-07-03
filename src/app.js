@@ -648,7 +648,7 @@ const initApp = async () => {
     isRecitationTransitioning = true;
     setTimeout(() => {
       isRecitationTransitioning = false;
-    }, 1200); // 1.2s safety window to allow speech engine to completely restart and ignore any previous trailing words
+    }, 2000); // 2.0s safety window to allow speech engine to completely restart and ignore any previous trailing words
     
     loadAyah(targetAyah);
   }
