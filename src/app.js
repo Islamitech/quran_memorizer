@@ -1080,11 +1080,30 @@ const initApp = async () => {
       const score = speechEngine.matchAlgo.calculateMatchScore(text, referenceText);
       AppState.speech.latestScore = score;
 
-      const spokenWordsCount = text.trim().split(/\s+/).length;
-      const refWordsCount = referenceText.trim().split(/\s+/).length;
+      const spokenWords = text.trim().split(/\s+/).filter(w => w.length > 0);
+      const refWords = referenceText.trim().split(/\s+/).filter(w => w.length > 0);
+      const spokenWordsCount = spokenWords.length;
+      const refWordsCount = refWords.length;
       
       // Relaxed matching check: accepts if score >= 78% (allowing speech-to-text minor word/pronunciation variations)
-      const isCorrect = score >= 0.78;
+      const scoreCorrect = score >= 0.78;
+      
+      // To prevent premature ending, ensure they have reached the end of the ayah:
+      // 1. Spoken words length must be at least refWordsCount - 1
+      // 2. Either the last word or second-to-last word of the reference must be matched somewhere in the spoken text, or spoken words count is >= refWordsCount
+      let isCorrect = scoreCorrect;
+      if (scoreCorrect && refWordsCount > 1) {
+        const lastWord = refWords[refWordsCount - 1];
+        const secondLastWord = refWords[refWordsCount - 2];
+        
+        const isLastWordMatched = spokenWords.some(sw => speechEngine.matchAlgo.isWordMatch(sw, lastWord));
+        const isSecondLastMatched = spokenWords.some(sw => speechEngine.matchAlgo.isWordMatch(sw, secondLastWord));
+        
+        const hasReachedEnd = (spokenWordsCount >= refWordsCount - 1) && 
+                             (isLastWordMatched || isSecondLastMatched || spokenWordsCount >= refWordsCount);
+        
+        isCorrect = hasReachedEnd;
+      }
 
       // Mark as mastered if correct, otherwise mark as unmastered (for logical accuracy)
       if (isCorrect) {
