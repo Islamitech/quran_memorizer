@@ -1331,8 +1331,23 @@ const initApp = async () => {
       return;
     }
 
+    const playNaturally = () => {
+      const url = URL.createObjectURL(currentRecordedBlob);
+      currentPlayingRecording = new Audio(url);
+      ui.btnPlayRecording.style.color = 'var(--accent-primary)';
+      
+      currentPlayingRecording.play().catch(err => {
+        console.error("Playback failed", err);
+      });
+
+      currentPlayingRecording.onended = () => {
+        ui.btnPlayRecording.style.color = '';
+        currentPlayingRecording = null;
+      };
+    };
+
     if (AppState.speech.liveEchoEnabled) {
-      // Play with Mosque Echo
+      // Play with Mosque Echo (with fallback)
       const AudioContextClass = window.AudioContext || window.webkitAudioContext;
       currentPlayingCtx = new AudioContextClass();
       
@@ -1389,24 +1404,17 @@ const initApp = async () => {
             }
           };
         } catch (e) {
-          console.error("Decoding audio failed", e);
+          console.error("Decoding audio failed, falling back to natural playback", e);
+          if (currentPlayingCtx) {
+            try { currentPlayingCtx.close(); } catch(err) {}
+            currentPlayingCtx = null;
+          }
+          playNaturally();
         }
       };
       reader.readAsArrayBuffer(currentRecordedBlob);
     } else {
-      // Play naturally
-      const url = URL.createObjectURL(currentRecordedBlob);
-      currentPlayingRecording = new Audio(url);
-      ui.btnPlayRecording.style.color = 'var(--accent-primary)';
-      
-      currentPlayingRecording.play().catch(err => {
-        console.error("Playback failed", err);
-      });
-
-      currentPlayingRecording.onended = () => {
-        ui.btnPlayRecording.style.color = '';
-        currentPlayingRecording = null;
-      };
+      playNaturally();
     }
   });
 
