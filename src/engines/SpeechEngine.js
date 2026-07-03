@@ -24,6 +24,10 @@ export class SpeechEngine {
     this.currentRecordingText = '';  // Captured detected text at stop time
     this.currentRecordingScore = 0;  // Captured score at stop time
     
+    // Recognition state machine flags to prevent asynchronous race conditions
+    this.recognitionActive = false;
+    this.shouldRestartRecognition = false;
+    
     this.init();
   }
   
@@ -51,6 +55,10 @@ export class SpeechEngine {
     this.recognition.continuous = true;
     this.recognition.interimResults = true;
     this.recognition.maxAlternatives = 1;
+    
+    this.recognition.onstart = () => {
+      this.recognitionActive = true;
+    };
     
     this.recognition.onresult = this.handleResults.bind(this);
     this.recognition.onerror = this.handleError.bind(this);
@@ -139,11 +147,12 @@ export class SpeechEngine {
       }
       
       // Re-create the recognition instance to prevent buffer leaks or late result events from previous ayah
+      this.shouldRestartRecognition = false;
       this.initRecognition();
       
       setTimeout(() => {
         try {
-          if (this.isRecording) {
+          if (this.isRecording && !this.recognitionActive) {
             this.recognition.start();
           }
         } catch(recError) {
@@ -273,15 +282,18 @@ export class SpeechEngine {
     if (!this.isRecording) return;
     
     this.pendingRestart = restartForNextAyah;
+    this.shouldRestartRecognition = restartForNextAyah;
     
     // Capture the detected text and score NOW before loadAyah resets them
     this.currentRecordingText = AppState.speech.detectedText || '';
     this.currentRecordingScore = AppState.speech.latestScore || 0;
     
     // Stop speech recognition
-    try {
-      this.recognition.stop();
-    } catch(e) {}
+    if (this.recognitionActive) {
+      try {
+        this.recognition.abort(); // Use abort to instantly stop and clear buffer
+      } catch(e) {}
+    }
     
     // Stop MediaRecorder - this triggers onstop which handles saving + restart
     if (this.mediaRecorder && this.mediaRecorder.state !== 'inactive') {
@@ -338,11 +350,25 @@ export class SpeechEngine {
   }
 
   handleEnd() {
-    // Speech recognition ended (browser auto-stops on iOS sometimes).
-    // If we're still actively recording and not in transition, restart recognition silently.
-    if (this.isRecording && !this.pendingRestart) {
+    this.recognitionActive = false;
+    
+    // If we have a pending restart flag, restart recognition now that it has completely ended!
+    if (this.shouldRestartRecognition) {
+      this.shouldRestartRecognition = false;
       try {
-        this.recognition.start();
+        if (!this.recognitionActive) {
+          this.recognition.start();
+        }
+      } catch(e) {
+        console.warn("Recognition restart failed in onend:", e);
+      }
+    }
+    // Otherwise, if we are still recording (browser auto-stopped it), restart silently
+    else if (this.isRecording && !this.pendingRestart) {
+      try {
+        if (!this.recognitionActive) {
+          this.recognition.start();
+        }
       } catch(e) {}
     }
   }
