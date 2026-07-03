@@ -734,6 +734,28 @@ const initApp = async () => {
   // Speech listeners & testing mode transitions
   let correctTransitionTimeout = null;
 
+  function markAyahAsMastered(surahId, ayahId) {
+    if (!surahId || !ayahId) return;
+    if (!AppState.memorization.mastered[surahId]) {
+      AppState.memorization.mastered[surahId] = [];
+    }
+    
+    const masteredForSurah = AppState.memorization.mastered[surahId];
+    if (!masteredForSurah.includes(ayahId)) {
+      const updated = [...masteredForSurah, ayahId];
+      
+      // Update state reactively
+      const newMastered = { ...AppState.memorization.mastered };
+      newMastered[surahId] = updated;
+      AppState.memorization.mastered = newMastered;
+      
+      // Recalculate progress for current surah
+      const ayahCount = AppState.current.surah.ayahCount || 1;
+      const progressVal = Math.round((updated.length / ayahCount) * 100);
+      AppState.memorization.progress = progressVal;
+    }
+  }
+
   ui.micBtn.addEventListener('click', () => {
     if(speechEngine.isRecording) {
       speechEngine.stop();
@@ -756,6 +778,11 @@ const initApp = async () => {
     if (referenceText && text) {
       const score = speechEngine.matchAlgo.calculateMatchScore(text, referenceText);
       AppState.speech.latestScore = score;
+
+      // Mark as mastered if correct (>= 70%)
+      if (score >= 0.70) {
+        markAyahAsMastered(AppState.current.surah.id, AppState.current.ayah.id);
+      }
 
       // Handle recitation testing mode (whole Surah recitation mode)
       if (AppState.settings.hideTextMode) {
@@ -819,6 +846,11 @@ const initApp = async () => {
       ui.btnPlayRecording.disabled = false;
       ui.btnPlayRecording.style.opacity = '1';
       ui.btnPlayRecording.style.color = '#0ea5e9';
+    }
+
+    // Mark as mastered if correct (>= 70%)
+    if (score >= 0.70) {
+      markAyahAsMastered(surahId, ayahId);
     }
     
     ui.speechResult.textContent = 'تم تسجيل تلاوتك وحفظها وإرسالها للمعلم تلقائياً! ✔️';
