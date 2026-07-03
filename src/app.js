@@ -642,8 +642,8 @@ const initApp = async () => {
       // Update UI immediately to show recording will continue
       ui.btnPlayRecording.disabled = true;
       ui.btnPlayRecording.style.opacity = '0.5';
-      ui.speechResult.textContent = 'جاري تسجيل تلاوتك للآية التالية تلقائياً...';
-      ui.speechResult.classList.add('show');
+      ui.speechResult.textContent = '';
+      ui.speechResult.classList.remove('show');
     }
     
     isRecitationTransitioning = true;
@@ -970,8 +970,8 @@ const initApp = async () => {
       if (AppState.player.isPlaying) AppState.player.isPlaying = false; // Stop reciter audio
       ui.btnPlayRecording.disabled = true;
       ui.btnPlayRecording.style.opacity = '0.5';
-      ui.speechResult.textContent = 'جاري تسجيل تلاوتك الآن...';
-      ui.speechResult.classList.add('show');
+      ui.speechResult.textContent = '';
+      ui.speechResult.classList.remove('show');
       speechEngine.start();
     }
   });
