@@ -783,10 +783,12 @@ const initApp = async () => {
     }
     
     const matchedRefIndices = new Set();
+    const matchedSpokenIndices = new Set();
     let i = m, j = n;
     while (i > 0 && j > 0) {
       if (spokenWords[i - 1] === cleanRefWords[j - 1]) {
         matchedRefIndices.add(j - 1);
+        matchedSpokenIndices.add(i - 1);
         i--;
         j--;
       } else if (dp[i - 1][j] > dp[i][j - 1]) {
@@ -795,6 +797,36 @@ const initApp = async () => {
         j--;
       }
     }
+
+    // Levenshtein distance helper for phonetic similarity check
+    const getEditDistance = (a, b) => {
+      const matrix = [];
+      for (let x = 0; x <= b.length; x++) matrix[x] = [x];
+      for (let y = 0; y <= a.length; y++) matrix[0][y] = y;
+      
+      for (let x = 1; x <= b.length; x++) {
+        for (let y = 1; y <= a.length; y++) {
+          if (b.charAt(x - 1) === a.charAt(y - 1)) {
+            matrix[x][y] = matrix[x - 1][y - 1];
+          } else {
+            matrix[x][y] = Math.min(
+              matrix[x - 1][y - 1] + 1, // substitution
+              matrix[x][y - 1] + 1,     // insertion
+              matrix[x - 1][y] + 1      // deletion
+            );
+          }
+        }
+      }
+      return matrix[b.length][a.length];
+    };
+
+    const isPhoneticallyClose = (wordA, wordB) => {
+      const dist = getEditDistance(wordA, wordB);
+      const maxLen = Math.max(wordA.length, wordB.length);
+      if (maxLen <= 3) return dist <= 1;
+      if (maxLen <= 5) return dist <= 2;
+      return dist <= 3;
+    };
     
     ui.quranDisplay.innerHTML = '';
     rawRefWords.forEach((word, idx) => {
@@ -806,9 +838,25 @@ const initApp = async () => {
         span.style.color = '#22c55e'; // Green for correct words
         span.style.fontWeight = '500';
       } else {
-        span.style.color = '#ef4444'; // Red for missing/incorrect words
-        span.style.textDecoration = 'underline dashed #ef4444';
-        span.style.fontWeight = 'bold';
+        // Check if there is an unmatched spoken word that is phonetically close
+        let closeMatchFound = false;
+        for (let sIdx = 0; sIdx < spokenWords.length; sIdx++) {
+          if (!matchedSpokenIndices.has(sIdx) && isPhoneticallyClose(cleanRefWords[idx], spokenWords[sIdx])) {
+            closeMatchFound = true;
+            matchedSpokenIndices.add(sIdx); // Consume it
+            break;
+          }
+        }
+        
+        if (closeMatchFound) {
+          span.style.color = '#f97316'; // Orange for tajweed/pronunciation mistakes
+          span.style.textDecoration = 'underline double #f97316';
+          span.style.fontWeight = 'bold';
+        } else {
+          span.style.color = '#ef4444'; // Red for missing/forgotten words (Hifz)
+          span.style.textDecoration = 'underline dashed #ef4444';
+          span.style.fontWeight = 'bold';
+        }
       }
       
       ui.quranDisplay.appendChild(span);
@@ -900,7 +948,10 @@ const initApp = async () => {
           
           if (ayahErrorCount >= 3) {
             highlightMistakes(text, referenceText);
-            ui.speechResult.innerHTML = '⚠️ <strong>تنبيه:</strong> تكرر الخطأ. تم عرض الكلمات (الأحمر: ناقص/خاطئ، الأخضر: صحيح).';
+            ui.speechResult.innerHTML = '⚠️ <strong>تحليل التسميع (أخطاء الحفظ والتجويد):</strong> تم تلوين الكلمات لمساعدتك لتصحيح التلاوة:<br>' +
+              '<span style="color: #22c55e; font-weight: bold; margin: 0 5px;">🟢 صحيح</span> | ' +
+              '<span style="color: #f97316; font-weight: bold; margin: 0 5px;">🟠 خطأ نطق/تجويد</span> | ' +
+              '<span style="color: #ef4444; font-weight: bold; margin: 0 5px;">🔴 خطأ حفظ (نسيان)</span>';
           } else {
             ui.speechResult.innerHTML = `⚠️ <strong>خطأ في التسميع:</strong> تلاوتك غير مطابقة بالكامل. المحاولة الخاطئة: ${ayahErrorCount}/3`;
             ui.quranDisplay.classList.add('recitation-error');
@@ -1088,7 +1139,10 @@ const initApp = async () => {
         
         if (ayahErrorCount >= 3) {
           highlightMistakes(text, referenceText);
-          ui.speechResult.innerHTML = '⚠️ <strong>تنبيه:</strong> تكرر الخطأ. تم عرض الكلمات (الأحمر: ناقص/خاطئ، الأخضر: صحيح).';
+          ui.speechResult.innerHTML = '⚠️ <strong>تحليل التسميع (أخطاء الحفظ والتجويد):</strong> تم تلوين الكلمات لمساعدتك لتصحيح التلاوة:<br>' +
+            '<span style="color: #22c55e; font-weight: bold; margin: 0 5px;">🟢 صحيح</span> | ' +
+            '<span style="color: #f97316; font-weight: bold; margin: 0 5px;">🟠 خطأ نطق/تجويد</span> | ' +
+            '<span style="color: #ef4444; font-weight: bold; margin: 0 5px;">🔴 خطأ حفظ (نسيان)</span>';
         } else {
           ui.speechResult.innerHTML = `⚠️ <strong>تنبيه:</strong> تلاوتك غير مطابقة بالكامل. المحاولة الخاطئة: ${ayahErrorCount}/3`;
           ui.quranDisplay.classList.add('recitation-error');
