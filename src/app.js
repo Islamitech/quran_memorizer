@@ -366,6 +366,9 @@ const initApp = async () => {
     // Update Tafsir and Translation content
     ui.tafsirDisplay.innerHTML = `<strong>التفسير الميسر:</strong><br>${ayahData.tafsir || 'جاري التحميل...'}`;
     ui.translationDisplay.innerHTML = `<strong>Sahih International:</strong><br>${ayahData.translation || 'Loading...'}`;
+    if (ui.tafsirModalQuranText) {
+      ui.tafsirModalQuranText.textContent = ayahData.text || '';
+    }
     
     // Basmalah logic
     if (ayahNumber == 1 && AppState.current.surah.id != 1 && AppState.current.surah.id != 9) {
