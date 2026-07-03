@@ -124,12 +124,20 @@ export class SpeechEngine {
         this.activeStream = await navigator.mediaDevices.getUserMedia({ audio: true });
       }
       
-      // Start speech recognition
+      // Start speech recognition robustly by aborting any lingering session first
       try {
-        this.recognition.start();
-      } catch(recError) {
-        console.warn("Recognition start issue:", recError);
-      }
+        this.recognition.abort();
+      } catch(e) {}
+      
+      setTimeout(() => {
+        try {
+          if (this.isRecording) {
+            this.recognition.start();
+          }
+        } catch(recError) {
+          console.warn("Recognition start issue:", recError);
+        }
+      }, 50);
       
       // Determine recording stream: apply echo effect if enabled
       let recordingStream = this.activeStream;
@@ -319,8 +327,8 @@ export class SpeechEngine {
 
   handleEnd() {
     // Speech recognition ended (browser auto-stops on iOS sometimes).
-    // If we're still actively recording, restart recognition silently.
-    if (this.isRecording) {
+    // If we're still actively recording and not in transition, restart recognition silently.
+    if (this.isRecording && !this.pendingRestart) {
       try {
         this.recognition.start();
       } catch(e) {}

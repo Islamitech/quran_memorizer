@@ -758,6 +758,26 @@ const initApp = async () => {
     }
   }
 
+  function markAyahAsUnmastered(surahId, ayahId) {
+    if (!surahId || !ayahId) return;
+    if (!AppState.memorization.mastered[surahId]) return;
+    
+    const masteredForSurah = AppState.memorization.mastered[surahId];
+    if (masteredForSurah.includes(ayahId)) {
+      const updated = masteredForSurah.filter(id => id !== ayahId);
+      
+      // Update state reactively
+      const newMastered = { ...AppState.memorization.mastered };
+      newMastered[surahId] = updated;
+      AppState.memorization.mastered = newMastered;
+      
+      // Recalculate progress for current surah
+      const ayahCount = AppState.current.surah.ayahCount || 1;
+      const progressVal = Math.round((updated.length / ayahCount) * 100);
+      AppState.memorization.progress = progressVal;
+    }
+  }
+
   function highlightMistakes(spokenText, referenceText) {
     const normalizeOpts = { removeDiacritics: true, unifyLetters: true };
     const normalizer = speechEngine.matchAlgo.normalizer;
@@ -903,21 +923,23 @@ const initApp = async () => {
       const spokenWordsCount = text.trim().split(/\s+/).length;
       const refWordsCount = referenceText.trim().split(/\s+/).length;
       
-      // Strict matching check: must match completely and score >= 95% (almost 100%)
-      const isPerfect = score >= 0.95 && spokenWordsCount >= refWordsCount;
+      // Relaxed matching check: accepts if score >= 78% (allowing speech-to-text minor word/pronunciation variations)
+      const isCorrect = score >= 0.78;
 
-      // Mark as mastered if correct
-      if (isPerfect) {
+      // Mark as mastered if correct, otherwise mark as unmastered (for logical accuracy)
+      if (isCorrect) {
         markAyahAsMastered(AppState.current.surah.id, AppState.current.ayah.id);
+      } else {
+        markAyahAsUnmastered(AppState.current.surah.id, AppState.current.ayah.id);
       }
 
       // Handle recitation testing mode (whole Surah recitation mode)
       if (AppState.settings.hideTextMode) {
-        // If the score is perfect, reveal the ayah and auto-advance
-        if (isPerfect && !correctTransitionTimeout) {
+        // If the score is correct, reveal the ayah and auto-advance
+        if (isCorrect && !correctTransitionTimeout) {
           // 1. Reveal words of current active Ayah
           ui.quranDisplay.classList.add('reveal-words');
-          ui.speechResult.innerHTML = '✔️ <strong>تسميع كامل وصحيح 100%!</strong> - الانتقال للآية التالية...';
+          ui.speechResult.innerHTML = '✔️ <strong>تسميع صحيح ومقبول!</strong> - الانتقال للآية التالية...';
           ui.speechResult.classList.add('show');
           
           // 2. Clear error class if any
@@ -939,12 +961,15 @@ const initApp = async () => {
             }
           }, 1800);
         }
-        // If user spoke more words than reference but it's not perfect (Mistake/Block)
+        // If user spoke a significant number of words but it's not correct (Mistake)
         else if (!correctTransitionTimeout && spokenWordsCount >= refWordsCount) {
           // Stop recording to prevent extra recording and let them fix
           speechEngine.stop(false);
           
           ayahErrorCount++;
+          
+          // Always unmark as mastered since there are errors in recitation
+          markAyahAsUnmastered(AppState.current.surah.id, AppState.current.ayah.id);
           
           if (ayahErrorCount >= 3) {
             highlightMistakes(text, referenceText);
@@ -976,9 +1001,11 @@ const initApp = async () => {
       ui.btnPlayRecording.style.color = '#0ea5e9';
     }
 
-    // Mark as mastered if correct (>= 70%)
-    if (score >= 0.70) {
+    // Mark or unmark as mastered based on score (>= 78%)
+    if (score >= 0.78) {
       markAyahAsMastered(surahId, ayahId);
+    } else {
+      markAyahAsUnmastered(surahId, ayahId);
     }
     
     ui.speechResult.textContent = 'تم تسجيل تلاوتك وحفظها وإرسالها للمعلم تلقائياً! ✔️';
@@ -1132,10 +1159,13 @@ const initApp = async () => {
       
       const spokenWordsCount = text.trim().split(/\s+/).filter(Boolean).length;
       const refWordsCount = referenceText.trim().split(/\s+/).filter(Boolean).length;
-      const isPerfect = score >= 0.95 && spokenWordsCount >= refWordsCount;
+      const isCorrect = score >= 0.78;
 
-      if (!isPerfect && text) {
+      if (!isCorrect && text) {
         ayahErrorCount++;
+        
+        // Mark as unmastered because there's an active error in recitation
+        markAyahAsUnmastered(AppState.current.surah.id, AppState.current.ayah.id);
         
         if (ayahErrorCount >= 3) {
           highlightMistakes(text, referenceText);
