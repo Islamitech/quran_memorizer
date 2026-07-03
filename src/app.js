@@ -107,7 +107,13 @@ const initApp = async () => {
     modalDonate: document.getElementById('modal-donate'),
     btnCloseDonate: document.getElementById('btn-close-donate'),
     btnCopyWallet: document.getElementById('btn-copy-wallet'),
-    donateToast: document.getElementById('donate-toast')
+    donateToast: document.getElementById('donate-toast'),
+    btnShare: document.getElementById('btn-share'),
+    modalShare: document.getElementById('modal-share'),
+    btnCloseShare: document.getElementById('btn-close-share'),
+    btnCopyLink: document.getElementById('btn-copy-link'),
+    btnNativeShare: document.getElementById('btn-native-share'),
+    shareToast: document.getElementById('share-toast')
   };
 
   karaokeEngine.init(ui.audio, ui.quranDisplay);
@@ -193,7 +199,7 @@ const initApp = async () => {
   }
 
   const surahsData = [
-    {id:1,name:'الفاتحة'},{id:2,name:'البقرة'},{id:3,name:'آل عمران'},{id:4,name:'النساء'},{id:5,name:'المائدة'},{id:6,name:'الأنعام'},{id:7,name:'الأعراف'},{id:8,name:'الأنفال'},{id:9,name:'التوبة'},{id:10,name:'يونس'},{id:11,name:'هود'},{id:12,name:'يوسف'},{id:13,name:'الرعد'},{id:14,name:'إبراهيم'},{id:15,name:'الحجر'},{id:16,name:'النحل'},{id:17,name:'الإسراء'},{id:18,name:'الكهف'},{id:19,name:'مريم'},{id:20,name:'طه'},{id:21,name:'الأنبياء'},{id:22,name:'الحج'},{id:23,name:'المؤمنون'},{id:24,name:'النور'},{id:25,name:'الفرقان'},{id:26,name:'الشعراء'},{id:27,name:'النمل'},{id:28,name:'القصص'},{id:29,name:'العنكبوت'},{id:30,name:'الروم'},{id:31,name:'لقمان'},{id:32,name:'السجدة'},{id:33,name:'الأحزاب'},{id:34,name:'سبأ'},{id:35,name:'فاطر'},{id:36,name:'يس'},{id:37,name:'الصافات'},{id:38,name:'ص'},{id:39,name:'الزمر'},{id:40,name:'غافر'},{id:41,name:'فصلت'},{id:42,name:'الشورى'},{id:43,name:'الزخرف'},{id:44,name:'الدخان'},{id:45,name:'الجاثية'},{id:46,name:'الأحقاف'},{id:47,name:'محمد'},{id:48,name:'الفتح'},{id:49,name:'الحجرات'},{id:50,name:'ق'},{id:51,name:'الذاريات'},{id:52,name:'الطور'},{id:53,name:'النجم'},{id:54,name:'القمر'},{id:55,name:'الرحمن'},{id:56,name:'الواقعة'},{id:57,name:'الحديد'},{id:58,name:'المجادلة'},{id:59,name:'الحشر'},{id:60,name:'الممتحنة'},{id:61,name:'الصف'},{id:62,name:'الجمعة'},{id:63,name:'المنافقون'},{id:64,name:'التغابن'},{id:65,name:'الطلاق'},{id:66,name:'التحريم'},{id:67,name:'الملك'},{id:68,name:'القلم'},{id:69,name:'الحاقة'},{id:70,name:'المعارج'},{id:71,name:'نوح'},{id:72,name:'الجن'},{id:73,name:'المزمل'},{id:74,name:'المدثر'},{id:75,name:'القيامة'},{id:76,name:'الإنسان'},{id:77,name:'المرسلات'},{id:78,name:'النبأ'},{id:79,name:'النازعات'},{id:80,name:'عبس'},{id:81,name:'التكوير'},{id:82,name:'الانفطار'},{id:83,name:'المطففين'},{id:84,name:'الانشقاق'},{id:85,name:'البروج'},{id:86,name:'الطارق'},{id:87,name:'الأعلى'},{id:88,name:'الغاشية'},{id:89,name:'الفجر'},{id:90,name:'البلد'},{id:91,name:'الشمس'},{id:92,name:'الليل'},{id:93,name:'الضحى'},{id:94,name:'الشرح'},{id:95,name:'التين'},{id:96,name:'العلق'},{id:97,name:'القدر'},{id:98,name:'البينة'},{id:99,name:'الزلزلة'},{id:100,name:'العاديات'},{id:101,name:'القارعة'},{id:102,name:'التكاثر'},{id:103,name:'العصر'},{id:104,name:'الهمزة'},{id:105,name:'الفيل'},{id:106,name:'قريش'},{id:107,name:'الماعون'},{id:108,name:'الكوثر'},{id:109,name:'الكافرون'},{id:110,name:'النصر'},{id:111,name:'المسد'},{id:112,name:'الإخلاص'},{id:113,name:'الفلق'},{id:114,name:'الناس'}
+    {id:1,name:'الفاتحة'},{id:2,name:'البقرة'},{id:3,name:'آل عمران'},{id:4,name:'النساء'},{id:5,name:'المائدة'},{id:6,name:'الأنعام'},{id:7,name:'الأعراف'},{id:8,name:'الأنفال'},{id:9,name:'التوبة'},{id:10,name:'يونس'},{id:11,name:'هود'},{id:12,name:'يوسف'},{id:13,name:'الرعد'},{id:14,name:'إبراهيم'},{id:15,name:'الحجر'},{id:16,name:'النحل'},{id:17,name:'الإسراء'},{id:18,name:'الكهف'},{id:19,name:'مريم'},{id:20,name:'طه'},{id:21,name:'الأنبياء'},{id:22,name:'الحج'},{id:23,name:'المؤمنون'},{id:24,name:'النور'},{id:25,name:'الفرقان'},{id:26,name:'الشعراء'},{id:27,name:'النمل'},{id:28,name:'القصص'},{id:29,name:'العنكبوت'},{id:30,name:'الروم'},{id:31,name:'لقمان'},{id:32,name:'السجدة'},{id:33,name:'الأحزاب'},{id:34,name:'سبأ'},{id:35,name:'فاطر'},{id:36,name:'يس'},{id:37,name:'الصافات'},{id:38,name:'ص'},{id:39,name:'الزمر'},{id:40,name:'غافر'},{id:41,name:'فصلت'},{id:42,name(--الشورى--)},{id:43,name:'الزخرف'},{id:44,name:'الدخان'},{id:45,name:'الجاثية'},{id:46,name:'الأحقاف'},{id:47,name:'محمد'},{id:48,name:'الفتح'},{id:49,name:'الحجرات'},{id:50,name:'ق'},{id:51,name:'الذاريات'},{id:52,name:'الطور'},{id:53,name:'النجم'},{id:54,name:'القمر'},{id:55,name:'الرحمن'},{id:56,name:'الواقعة'},{id:57,name:'الحديد'},{id:58,name:'المجادلة'},{id:59,name:'الحشر'},{id:60,name:'الممتحنة'},{id:61,name:'الصف'},{id:62,name:'الجمعة'},{id:63,name:'المنافقون'},{id:64,name:'التغابن'},{id:65,name:'الطلاق'},{id:66,name:'التحريم'},{id:67,name:'الملك'},{id:68,name:'القلم'},{id:69,name:'الحاقة'},{id:70,name:'المعارج'},{id:71,name:'نوح'},{id:72,name:'الجن'},{id:73,name:'المزمل'},{id:74,name:'المدثر'},{id:75,name:'القيامة'},{id:76,name:'الإنسان'},{id:77,name:'المرسلات'},{id:78,name:'النبأ'},{id:79,name:'النازعات'},{id:80,name:'عبس'},{id:81,name:'التكوير'},{id:82,name:'Organfatar'},{id:83,name:'المطففين'},{id:84,name:'الانشقاق'},{id:85,name:'البروج'},{id:86,name:'الطارق'},{id:87,name:'الأعلى'},{id:88,name:'الغاشية'},{id:89,name:'الفجر'},{id:90,name:'البلد'},{id:91,name:'الشمس'},{id:92,name:'الليل'},{id:93,name:'الضحى'},{id:94,name:'الشرح'},{id:95,name:'التين'},{id:96,name:'العلق'},{id:97,name:'القدر'},{id:98,name:'البينة'},{id:99,name:'الزلزلة'},{id:100,name:'العاديات'},{id:101,name:'القارعة'},{id:102,name:'التكاثر'},{id:103,name:'العصر'},{id:104,name:'الهمزة'},{id:105,name:'الفيل'},{id:106,name:'قريش'},{id:107,name:'الماعون'},{id:108,name:'الكوثر'},{id:109,name:'الكافرون'},{id:110,name:'النصر'},{id:111,name:'المسد'},{id:112,name:'الإخلاص'},{id:113,name:'الفلق'},{id:114,name:'الناس'}
   ];
 
   const initialSurah = surahsData.find(s => s.id == AppState.current.surah.id);
@@ -472,7 +478,6 @@ const initApp = async () => {
     if(ui.statMastered) ui.statMastered.textContent = `${val}%`;
   });
 
-  // Audio events
   // Audio events and OS lockscreen state synchronization
   const syncPlaybackState = () => {
     if ('mediaSession' in navigator) {
@@ -950,16 +955,12 @@ const initApp = async () => {
       
       const audioHtml = report.audioBase64 ? `<div class="report-audio"><audio src="${report.audioBase64}" controls></audio></div>` : '<p>لا يوجد تسجيل صوتي.</p>';
       
-      const scorePercent = Math.round(report.score * 100);
-      const scoreColor = scorePercent >= 70 ? '#22c55e' : scorePercent >= 40 ? '#f59e0b' : '#ef4444';
-      
       card.innerHTML = `
         <div class="report-header">
           <span>${report.surahName} - آية ${report.ayahNumber}</span>
-          <span class="report-score" style="background-color: ${scoreColor}; color: #fff;" title="تطابق الكلمات فقط - لا يشمل التجويد أو مخارج الحروف">تطابق: ${scorePercent}%</span>
+          <span class="report-score" style="background-color: #0ea5e9; color: #fff; font-weight: bold; padding: 4px 10px; border-radius: 20px; font-size: 0.8rem;">تم التسميع</span>
         </div>
-        <div class="report-text">${report.text}</div>
-        <div style="font-size: 0.7rem; color: var(--text-secondary); margin-top: 2px; font-style: italic;">* نسبة التطابق للكلمات فقط، ولا تشمل التجويد أو مخارج النطق</div>
+        <div class="report-text" style="color: var(--text-secondary); font-style: italic;">"${report.text}"</div>
         ${audioHtml}
         <div style="font-size: 0.8rem; color: var(--text-secondary); margin-top: 4px;">
           التاريخ: ${new Date(report.timestamp).toLocaleString()}
@@ -1032,10 +1033,19 @@ const initApp = async () => {
     ui.modalOverlay.style.display = 'none';
     ui.teacherModal.style.display = 'none';
   });
-  
 
+  if (ui.modalOverlay) {
+    ui.modalOverlay.addEventListener('click', () => {
+      if (ui.teacherModal) ui.teacherModal.style.display = 'none';
+      if (ui.listeningModal) ui.listeningModal.style.display = 'none';
+      if (ui.modalDonate) ui.modalDonate.style.display = 'none';
+      if (ui.modalShare) ui.modalShare.style.display = 'none';
+      ui.modalOverlay.style.display = 'none';
+      AppState.userRole = 'student';
+    });
+  }
 
-  // Interactive Tour
+  // Tour setup listener
   if (ui.btnTour) {
     ui.btnTour.addEventListener('click', () => {
       tour.start();
@@ -1056,6 +1066,63 @@ const initApp = async () => {
     });
   }
 
+  // --- ميزة إخفاء الآيات للتسميع الغيبي ---
+  const btnToggleText = document.createElement('button');
+  btnToggleText.id = 'btn-toggle-text';
+  btnToggleText.setAttribute('title', 'إخفاء نص الآية والاعتماد على السمع ورقم الآية فقط للتسميع الغيبي');
+  
+  btnToggleText.style.cssText = `
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 15px auto;
+    padding: 10px 20px;
+    background-color: var(--bg-card, #fff);
+    border: 1px solid var(--border-color, #e2e8f0);
+    border-radius: 30px;
+    color: var(--text-primary, #1e293b);
+    font-family: var(--font-arabic), sans-serif;
+    font-size: 0.9rem;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  `;
+
+  if (ui.quranDisplay) {
+    ui.quranDisplay.parentElement.after(btnToggleText);
+  }
+
+  let isTextHidden = savedState?.settings?.hideTextMode || false;
+
+  const applyTextVisibility = () => {
+    let styleTag = document.getElementById('hide-text-style-rule');
+    if (isTextHidden) {
+      btnToggleText.innerHTML = '👁️ إظهار الآيات';
+      btnToggleText.style.backgroundColor = 'var(--accent-primary, #0ea5e9)';
+      btnToggleText.style.color = '#fff';
+      if (!styleTag) {
+        styleTag = document.createElement('style');
+        styleTag.id = 'hide-text-style-rule';
+        styleTag.innerHTML = '#current-ayah-display .word { display: none !important; }';
+        document.head.appendChild(styleTag);
+      }
+    } else {
+      btnToggleText.innerHTML = '👁️ إخفاء الآيات للتسميع';
+      btnToggleText.style.backgroundColor = 'var(--bg-card, #fff)';
+      btnToggleText.style.color = 'var(--text-primary, #1e293b)';
+      if (styleTag) styleTag.remove();
+    }
+    AppState.settings.hideTextMode = isTextHidden;
+    window.storageManager.save('quran_app_state', AppState);
+  };
+
+  btnToggleText.addEventListener('click', () => {
+    isTextHidden = !isTextHidden;
+    applyTextVisibility();
+  });
+
+  applyTextVisibility();
 
   // Dynamically update the repeat Surah selection dropdown based on checked Surahs
   function updateRepeatDropdown() {
@@ -1107,14 +1174,12 @@ const initApp = async () => {
     ui.listeningSurahsList.appendChild(label);
   });
 
-  // Initial call to populate with pre-selected surahs
   updateRepeatDropdown();
 
   ui.chkRepeatSurah.addEventListener('change', (e) => {
     ui.listeningRepeatContainer.style.display = e.target.checked ? 'block' : 'none';
   });
 
-  // Search filter logic for surahs checklist in modal
   const txtSearchSurahs = document.getElementById('txt-search-listening-surahs');
   if (txtSearchSurahs) {
     txtSearchSurahs.addEventListener('input', (e) => {
@@ -1135,7 +1200,6 @@ const initApp = async () => {
   if (ui.btnListening) {
     ui.btnListening.addEventListener('click', () => {
       if (document.body.classList.contains('theme-listening')) {
-        // Exit listening mode
         document.body.classList.remove('theme-listening');
         ui.btnListening.style.color = '';
         listeningPlaylist = [];
@@ -1143,20 +1207,17 @@ const initApp = async () => {
         AppState.player.isPlaying = false;
         ui.audio.pause();
       } else {
-        // Reset search query
         if (txtSearchSurahs) {
           txtSearchSurahs.value = '';
           const labels = ui.listeningSurahsList.querySelectorAll('label');
           labels.forEach(l => l.style.display = 'flex');
         }
-        // Open modal
         ui.modalOverlay.style.display = 'block';
         ui.listeningModal.style.display = 'flex';
       }
     });
   }
 
-  // Sync live echo checkbox changes
   if (ui.chkLiveEcho) {
     ui.chkLiveEcho.addEventListener('change', (e) => {
       AppState.speech.liveEchoEnabled = e.target.checked;
@@ -1198,7 +1259,6 @@ const initApp = async () => {
 
   if (ui.btnStartListeningMode) {
     ui.btnStartListeningMode.addEventListener('click', () => {
-      // Gather selected surahs
       const checkedBoxes = document.querySelectorAll('.listening-surah-chk:checked');
       if (checkedBoxes.length === 0) {
         alert("يرجى اختيار سورة واحدة على الأقل للاستماع.");
@@ -1208,22 +1268,18 @@ const initApp = async () => {
       listeningPlaylist = Array.from(checkedBoxes).map(cb => parseInt(cb.value));
       currentPlaylistIndex = 0;
 
-      // Handle specific surah repeat option
       if (ui.chkRepeatSurah.checked) {
         repeatSurahId = parseInt(ui.listeningRepeatSelect.value);
       } else {
         repeatSurahId = null;
       }
 
-      // Hide modal and overlay
       ui.modalOverlay.style.display = 'none';
       ui.listeningModal.style.display = 'none';
 
-      // Start Listening Mode
       document.body.classList.add('theme-listening');
       ui.btnListening.style.color = 'var(--accent-primary)';
 
-      // Load first surah in playlist and play
       loadSurah(listeningPlaylist[0]).then(() => {
         AppState.player.isPlaying = true;
         ui.audio.play().catch(e => {});
@@ -1231,7 +1287,6 @@ const initApp = async () => {
     });
   }
 
-  // Media Session background audio action controls (Lockscreen buttons)
   if ('mediaSession' in navigator) {
     navigator.mediaSession.setActionHandler('play', () => {
       AppState.player.isPlaying = true;
@@ -1267,8 +1322,6 @@ const initApp = async () => {
 
   // PWA Install Logic
   let deferredPrompt;
-  
-  // Show install button for web app installation if not standalone
   const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
   if (!isStandalone) {
     if (ui.btnInstall) {
@@ -1294,13 +1347,11 @@ const initApp = async () => {
         }
         deferredPrompt = null;
       } else {
-        // iOS Safari manual walkthrough or generic guide
         alert("تثبيت التطبيق على هاتف الذكي:\n\n• للآيفون (iOS): اضغط على زر مشاركة في متصفح Safari ثم اختر 'إضافة إلى الصفحة الرئيسية' (Add to Home Screen).\n\n• للأندرويد: اضغط على نقاط القائمة الجانبية للمتصفح ثم اختر 'تثبيت التطبيق' (Install App).");
       }
     });
   }
 
-  // Open Donation Modal
   if (ui.btnDonate) {
     ui.btnDonate.addEventListener('click', () => {
       if (ui.modalOverlay) ui.modalOverlay.style.display = 'block';
@@ -1308,7 +1359,6 @@ const initApp = async () => {
     });
   }
 
-  // Close Donation Modal
   if (ui.btnCloseDonate) {
     ui.btnCloseDonate.addEventListener('click', () => {
       if (ui.modalOverlay) ui.modalOverlay.style.display = 'none';
@@ -1316,12 +1366,9 @@ const initApp = async () => {
     });
   }
 
-  // Handle Egypt Mobile Wallet Copy number action
   if (ui.btnCopyWallet) {
     ui.btnCopyWallet.addEventListener('click', () => {
       const phoneNumber = '+201143888355';
-      
-      // Use modern navigator.clipboard if available, else fallback
       if (navigator.clipboard) {
         navigator.clipboard.writeText(phoneNumber).then(showToast).catch(fallbackCopy);
       } else {
@@ -1331,7 +1378,7 @@ const initApp = async () => {
       function fallbackCopy() {
         const textArea = document.createElement('textarea');
         textArea.value = phoneNumber;
-        textArea.style.position = 'fixed'; // prevent scrolling to bottom
+        textArea.style.position = 'fixed';
         document.body.appendChild(textArea);
         textArea.focus();
         textArea.select();
@@ -1355,10 +1402,75 @@ const initApp = async () => {
     });
   }
 
-  // Initial offline alert check on boot
-  checkOfflineStatusAndAlert();
+  // Share & QR Modal Event Listeners
+  if (ui.btnShare) {
+    ui.btnShare.addEventListener('click', () => {
+      if (ui.modalOverlay) ui.modalOverlay.style.display = 'block';
+      if (ui.modalShare) ui.modalShare.style.display = 'flex';
+      
+      // Check for Web Share API support dynamically
+      if (navigator.share && ui.btnNativeShare) {
+        ui.btnNativeShare.style.display = 'flex';
+      }
+    });
+  }
 
-  // Initial load
+  if (ui.btnCloseShare) {
+    ui.btnCloseShare.addEventListener('click', () => {
+      if (ui.modalOverlay) ui.modalOverlay.style.display = 'none';
+      if (ui.modalShare) ui.modalShare.style.display = 'none';
+    });
+  }
+
+  if (ui.btnCopyLink) {
+    ui.btnCopyLink.addEventListener('click', () => {
+      const shareUrl = 'https://islamitech.github.io/quran_memorizer/';
+      if (navigator.clipboard) {
+        navigator.clipboard.writeText(shareUrl).then(showShareToast).catch(fallbackShareCopy);
+      } else {
+        fallbackShareCopy();
+      }
+      
+      function fallbackShareCopy() {
+        const textArea = document.createElement('textarea');
+        textArea.value = shareUrl;
+        textArea.style.position = 'fixed';
+        document.body.appendChild(textArea);
+        textArea.focus();
+        textArea.select();
+        try {
+          document.execCommand('copy');
+          showShareToast();
+        } catch (err) {
+          console.warn('Fallback share copy failed', err);
+        }
+        document.body.removeChild(textArea);
+      }
+      
+      function showShareToast() {
+        if (ui.shareToast) {
+          ui.shareToast.classList.add('show');
+          setTimeout(() => {
+            ui.shareToast.classList.remove('show');
+          }, 2500);
+        }
+      }
+    });
+  }
+
+  if (ui.btnNativeShare) {
+    ui.btnNativeShare.addEventListener('click', () => {
+      if (navigator.share) {
+        navigator.share({
+          title: 'محفّظ القرآن الكريم 📖',
+          text: 'رفيقك التفاعلي الذكي لحفظ وتلاوة القرآن الكريم بسهولة ودون إنترنت!',
+          url: 'https://islamitech.github.io/quran_memorizer/'
+        }).catch(err => console.log('Share canceled or failed', err));
+      }
+    });
+  }
+
+  checkOfflineStatusAndAlert();
   loadSurah(AppState.current.surah.id);
 };
 
