@@ -931,4 +931,10 @@ input[type="range"] {
   color: var(--accent-primary);
 }
 
+.ayah-info-btn:hover {
+  background-color: var(--accent-primary-light) !important;
+  color: var(--accent-primary) !important;
+  transform: scale(1.08);
+}
+
 

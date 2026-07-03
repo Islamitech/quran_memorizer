@@ -110,15 +110,18 @@
       </section>
 
       <!-- Quran Display Card -->
-      <section class="quran-card" id="quran-container">
+      <section class="quran-card" id="quran-container" style="position: relative;">
+        <!-- Ayah Info Button (Top Left) -->
+        <button id="btn-ayah-info" class="ayah-info-btn animate-hover" title="تفسير وترجمة الآية" style="position: absolute; top: 12px; left: 12px; background: transparent; border: none; color: var(--text-secondary); cursor: pointer; padding: 6px; border-radius: 50%; display: flex; align-items: center; justify-content: center; transition: all 0.2s ease;">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
+        </button>
+
         <div class="ayah-wrapper">
           <div id="focused-ayah-title" style="display:none; text-align: center; font-family: var(--font-ui); font-size: 1.1rem; color: var(--text-secondary); margin-bottom: 20px; font-weight: 500; letter-spacing: 0.5px;"></div>
           <div id="basmalah-container" class="basmalah-container" style="display:none;">بِسْمِ ٱللَّهِ ٱلرَّحْمَٰنِ ٱلرَّحِيمِ</div>
           <p class="ayah-container" id="current-ayah-display">
             <!-- Ayah words will be rendered here -->
           </p>
-          <div id="tafsir-display" style="display:none; font-family: var(--font-ui); font-size: 1.1rem; color: var(--text-secondary); margin-top: 16px; padding-top: 16px; border-top: 1px dashed var(--border-color); line-height: 1.8;"></div>
-          <div id="translation-display" style="display:none; font-family: 'Inter', sans-serif; font-size: 1rem; color: var(--text-secondary); margin-top: 16px; direction: ltr; text-align: left; padding-top: 16px; border-top: 1px dashed var(--border-color); line-height: 1.6;"></div>
         </div>
       </section>
 
@@ -359,6 +362,38 @@
       </button>
       
       <div id="share-toast" class="toast-notification">تم نسخ رابط الموقع بنجاح!</div>
+    </div>
+  </div>
+
+  <!-- Tafsir & Translation Modal/Drawer -->
+  <div id="modal-tafsir" class="modal-card" style="display: none; width: 90%; max-width: 500px; max-height: 85vh;">
+    <div class="modal-header">
+      <h2 style="font-family: var(--font-arabic); display: flex; align-items: center; gap: 8px; font-size: 1.25rem;">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: var(--accent-primary);"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20"></path></svg>
+        تفسير وترجمة الآية
+      </h2>
+      <button id="btn-close-tafsir" class="icon-btn" aria-label="إغلاق التفسير">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+      </button>
+    </div>
+    <div class="modal-body" style="overflow-y: auto; padding: 20px; direction: rtl; text-align: right;">
+      <!-- Minimized Quran reference text -->
+      <div id="tafsir-modal-quran-text" style="font-family: var(--font-quran); font-size: 1.6rem; line-height: 1.8; text-align: center; color: var(--accent-primary); padding: 12px; background: var(--bg-page); border-radius: 12px; margin-bottom: 20px; border-right: 4px solid var(--accent-primary);"></div>
+      
+      <!-- Content Sections -->
+      <div style="display: flex; flex-direction: column; gap: 20px;">
+        <!-- Tafsir Display -->
+        <div id="modal-tafsir-section">
+          <h3 style="font-family: var(--font-arabic); font-size: 1rem; color: var(--text-primary); margin-bottom: 8px; font-weight: 700; border-bottom: 2px solid var(--accent-primary-light); padding-bottom: 4px; display: inline-block;">التفسير الميسر:</h3>
+          <p id="tafsir-display" style="font-family: var(--font-arabic); font-size: 1.05rem; color: var(--text-secondary); line-height: 1.8; margin: 0;"></p>
+        </div>
+        
+        <!-- Translation Display -->
+        <div id="modal-translation-section">
+          <h3 style="font-family: var(--font-arabic); font-size: 1rem; color: var(--text-primary); margin-bottom: 8px; font-weight: 700; border-bottom: 2px solid var(--accent-primary-light); padding-bottom: 4px; display: inline-block;">English Translation:</h3>
+          <p id="translation-display" style="font-family: 'Inter', sans-serif; font-size: 0.95rem; color: var(--text-secondary); line-height: 1.6; direction: ltr; text-align: left; margin: 0;"></p>
+        </div>
+      </div>
     </div>
   </div>
 
