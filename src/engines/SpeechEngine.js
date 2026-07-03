@@ -89,18 +89,14 @@ export class SpeechEngine {
       this.currentRecordingSurah = AppState.current.surah.id;
       this.currentRecordingAyah = AppState.current.ayah.id;
       
-      // Reinitialize and start recognition SYNCHRONOUSLY to bypass iOS Safari's user gesture validation block
-      this.initRecognition();
-      try {
-        this.recognition.start();
-      } catch(recognitionErr) {
-        console.warn("SpeechRecognition start failed:", recognitionErr);
-      }
-      
-      // Get microphone stream (or reuse existing one) asynchronously
+      // 1. Get microphone stream (or reuse existing one) asynchronously first
       if (!this.activeStream || this.activeStream.getTracks().every(t => t.readyState === 'ended')) {
         this.activeStream = await navigator.mediaDevices.getUserMedia({ audio: true });
       }
+      
+      // 2. Reinitialize and start recognition
+      this.initRecognition();
+      this.safeStartRecognition(3);
       
       // Determine recording stream: apply echo effect if enabled
       let recordingStream = this.activeStream;
