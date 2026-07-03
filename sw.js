@@ -1,6 +1,6 @@
 // sw.js - Service Worker المتقدم
 
-const CACHE_VERSION = 'v48';
+const CACHE_VERSION = 'v49';
 const CACHE_NAMES = {
   static: `static-${CACHE_VERSION}`,
   audio: `audio-${CACHE_VERSION}`,
@@ -95,11 +95,10 @@ self.addEventListener('fetch', (event) => {
     return;
   } else if (url.pathname.includes('/api/')) {
     strategy = STRATEGIES['network-first'];
-  } else if (event.request.mode === 'navigate' || url.pathname === '/' || url.pathname.endsWith('index.html')) {
-    // Navigate/HTML requests must be network-first to get updates instantly when online
-    strategy = STRATEGIES['network-first'];
   } else {
-    strategy = STRATEGIES['cache-first'];
+    // All other requests (HTML, JS, CSS, images) use network-first
+    // to ensure users always get the latest updates when online
+    strategy = STRATEGIES['network-first'];
   }
   
   event.respondWith(strategy(event.request));

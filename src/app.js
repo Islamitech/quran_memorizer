@@ -94,6 +94,7 @@ const initApp = async () => {
     btnEcho: document.getElementById('btn-echo'),
     btnListening: document.getElementById('btn-listening'),
     btnInstall: document.getElementById('btn-install'),
+    btnForceUpdate: document.getElementById('btn-force-update'),
     tafsirDisplay: document.getElementById('tafsir-display'),
     translationDisplay: document.getElementById('translation-display'),
     listeningModal: document.getElementById('listening-mode-modal'),
@@ -1807,6 +1808,29 @@ const initApp = async () => {
         deferredPrompt = null;
       } else {
         alert("تثبيت التطبيق على هاتف الذكي:\n\n• للآيفون (iOS): اضغط على زر مشاركة في متصفح Safari ثم اختر 'إضافة إلى الصفحة الرئيسية' (Add to Home Screen).\n\n• للأندرويد: اضغط على نقاط القائمة الجانبية للمتصفح ثم اختر 'تثبيت التطبيق' (Install App).");
+      }
+    });
+  }
+
+  // Force Update Button - clears all caches and reloads
+  if (ui.btnForceUpdate) {
+    ui.btnForceUpdate.addEventListener('click', async () => {
+      if (confirm('سيتم تفريغ جميع الملفات المؤقتة وإعادة تحميل التطبيق بأحدث نسخة. هل تريد المتابعة؟')) {
+        try {
+          // 1. Delete all caches
+          const cacheNames = await caches.keys();
+          await Promise.all(cacheNames.map(name => caches.delete(name)));
+          
+          // 2. Unregister all service workers
+          const registrations = await navigator.serviceWorker.getRegistrations();
+          await Promise.all(registrations.map(reg => reg.unregister()));
+          
+          // 3. Hard reload
+          window.location.reload(true);
+        } catch (err) {
+          console.error('Force update error:', err);
+          window.location.reload(true);
+        }
       }
     });
   }
