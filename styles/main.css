@@ -254,7 +254,8 @@ body.theme-listening .selectors-card,
 body.theme-listening .speech-result-container,
 body.theme-listening .mic-control-group,
 body.theme-listening #btn-switch-role,
-body.theme-listening #btn-child-mode {
+body.theme-listening #btn-child-mode,
+body.theme-listening .dropdown-wrapper {
   display: none !important;
 }
 
@@ -287,6 +288,11 @@ body.recitation-playing .player-buttons {
 
 body.recitation-playing .quran-card {
   border: none;
+}
+
+body.theme-listening .test-mode-toggle-container,
+body.recitation-playing .test-mode-toggle-container {
+  display: none !important;
 }
 
 /* Switch & Slider Styles */

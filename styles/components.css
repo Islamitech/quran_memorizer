@@ -96,12 +96,10 @@ select:focus {
 
 /* Quran Display */
 .quran-card {
-  flex: 1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 35vh;
-  padding: 10px;
+  min-height: 250px;
+  height: auto;
+  padding: 24px;
+  display: block; /* Normal block flow to prevent flex centering overflow */
 }
 
 .ayah-wrapper {
@@ -836,4 +834,99 @@ input[type="range"] {
   20%, 60% { transform: translateX(-6px); }
   40%, 80% { transform: translateX(6px); }
 }
+
+/* Header Settings Dropdown Styles */
+.dropdown-wrapper {
+  position: relative;
+  display: inline-flex;
+}
+
+.dropdown-menu {
+  display: none;
+  position: absolute;
+  left: 0;
+  top: 100%;
+  margin-top: 8px;
+  background-color: var(--bg-card);
+  border: 1px solid var(--border-light);
+  border-radius: 12px;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.05);
+  min-width: 220px;
+  z-index: 1050;
+  padding: 6px 0;
+  animation: dropdown-fade-in 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.dropdown-menu.show {
+  display: block;
+}
+
+.dropdown-item {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 12px;
+  width: 100%;
+  padding: 10px 16px;
+  border: none;
+  background: transparent;
+  color: var(--text-primary);
+  font-family: var(--font-arabic);
+  font-size: 0.9rem;
+  font-weight: 500;
+  text-align: right;
+  direction: rtl;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.dropdown-item:hover {
+  background-color: var(--bg-page);
+  color: var(--accent-primary);
+}
+
+.dropdown-item svg {
+  color: var(--text-secondary);
+  transition: color 0.2s ease;
+}
+
+.dropdown-item:hover svg {
+  color: var(--accent-primary);
+}
+
+@keyframes dropdown-fade-in {
+  from { opacity: 0; transform: translateY(-8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Minimalist Circular Eye Toggle Button */
+.circular-toggle-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  background-color: var(--bg-card);
+  border: 1px solid var(--border-light);
+  color: var(--text-secondary);
+  cursor: pointer;
+  box-shadow: var(--shadow-sm);
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.circular-toggle-btn:hover {
+  background-color: var(--bg-page);
+  border-color: var(--accent-primary);
+  color: var(--accent-primary);
+  transform: scale(1.08);
+  box-shadow: var(--shadow-md);
+}
+
+.circular-toggle-btn.active {
+  background-color: var(--accent-primary-light);
+  border-color: var(--accent-primary);
+  color: var(--accent-primary);
+}
+
 

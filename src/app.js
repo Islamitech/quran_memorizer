@@ -113,7 +113,12 @@ const initApp = async () => {
     btnCloseShare: document.getElementById('btn-close-share'),
     btnCopyLink: document.getElementById('btn-copy-link'),
     btnNativeShare: document.getElementById('btn-native-share'),
-    shareToast: document.getElementById('share-toast')
+    shareToast: document.getElementById('share-toast'),
+    btnToggleTextMinimal: document.getElementById('btn-toggle-text-minimal'),
+    btnMoreMenu: document.getElementById('btn-more-menu'),
+    headerMoreDropdown: document.getElementById('header-more-dropdown'),
+    eyeIconOpen: document.getElementById('eye-icon-open'),
+    eyeIconClosed: document.getElementById('eye-icon-closed')
   };
 
   karaokeEngine.init(ui.audio, ui.quranDisplay);
@@ -1341,40 +1346,16 @@ const initApp = async () => {
   }
 
   // --- ميزة إخفاء الآيات للتسميع الغيبي ---
-  const btnToggleText = document.createElement('button');
-  btnToggleText.id = 'btn-toggle-text';
-  btnToggleText.setAttribute('title', 'إخفاء نص الآية والاعتماد على السمع ورقم الآية فقط للتسميع الغيبي');
-  
-  btnToggleText.style.cssText = `
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    margin: 15px auto;
-    padding: 10px 20px;
-    background-color: var(--bg-card, #fff);
-    border: 1px solid var(--border-color, #e2e8f0);
-    border-radius: 30px;
-    color: var(--text-primary, #1e293b);
-    font-family: var(--font-arabic), sans-serif;
-    font-size: 0.9rem;
-    font-weight: bold;
-    cursor: pointer;
-    transition: all 0.2s ease;
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-  `;
-
-  if (ui.quranDisplay) {
-    ui.quranDisplay.parentElement.after(btnToggleText);
-  }
-
   let isTextHidden = savedState?.settings?.hideTextMode || false;
 
   const applyTextVisibility = () => {
     let styleTag = document.getElementById('hide-text-style-rule');
     if (isTextHidden) {
-      btnToggleText.innerHTML = '👁️ إظهار الآيات';
-      btnToggleText.style.backgroundColor = 'var(--accent-primary, #0ea5e9)';
-      btnToggleText.style.color = '#fff';
+      if (ui.btnToggleTextMinimal) {
+        ui.btnToggleTextMinimal.classList.add('active');
+        if (ui.eyeIconOpen) ui.eyeIconOpen.style.display = 'none';
+        if (ui.eyeIconClosed) ui.eyeIconClosed.style.display = 'block';
+      }
       if (!styleTag) {
         styleTag = document.createElement('style');
         styleTag.id = 'hide-text-style-rule';
@@ -1385,9 +1366,11 @@ const initApp = async () => {
         document.head.appendChild(styleTag);
       }
     } else {
-      btnToggleText.innerHTML = '👁️ إخفاء الآيات للتسميع';
-      btnToggleText.style.backgroundColor = 'var(--bg-card, #fff)';
-      btnToggleText.style.color = 'var(--text-primary, #1e293b)';
+      if (ui.btnToggleTextMinimal) {
+        ui.btnToggleTextMinimal.classList.remove('active');
+        if (ui.eyeIconOpen) ui.eyeIconOpen.style.display = 'block';
+        if (ui.eyeIconClosed) ui.eyeIconClosed.style.display = 'none';
+      }
       if (styleTag) styleTag.remove();
       // Ensure the display is cleared from reveal class
       if (ui.quranDisplay) ui.quranDisplay.classList.remove('reveal-words');
@@ -1396,21 +1379,37 @@ const initApp = async () => {
     window.storageManager.save('quran_app_state', AppState);
   };
 
-  btnToggleText.addEventListener('click', () => {
-    isTextHidden = !isTextHidden;
-    applyTextVisibility();
-    if (!isTextHidden) {
-      if (correctTransitionTimeout) {
-        clearTimeout(correctTransitionTimeout);
-        correctTransitionTimeout = null;
+  if (ui.btnToggleTextMinimal) {
+    ui.btnToggleTextMinimal.addEventListener('click', () => {
+      isTextHidden = !isTextHidden;
+      applyTextVisibility();
+      if (!isTextHidden) {
+        if (correctTransitionTimeout) {
+          clearTimeout(correctTransitionTimeout);
+          correctTransitionTimeout = null;
+        }
+        ayahErrorCount = 0;
+        // Reload current ayah to clear any red/green highlights
+        loadAyah(AppState.current.ayah.id);
       }
-      ayahErrorCount = 0;
-      // Reload current ayah to clear any red/green highlights
-      loadAyah(AppState.current.ayah.id);
-    }
-  });
+    });
+  }
 
   applyTextVisibility();
+
+  // --- القائمة المنسدلة للإعدادات (Settings Dropdown Menu) ---
+  if (ui.btnMoreMenu && ui.headerMoreDropdown) {
+    ui.btnMoreMenu.addEventListener('click', (e) => {
+      e.stopPropagation();
+      ui.headerMoreDropdown.classList.toggle('show');
+    });
+
+    document.addEventListener('click', (e) => {
+      if (!ui.btnMoreMenu.parentElement.contains(e.target)) {
+        ui.headerMoreDropdown.classList.remove('show');
+      }
+    });
+  }
 
   // Dynamically update the repeat Surah selection dropdown based on checked Surahs
   function updateRepeatDropdown() {
