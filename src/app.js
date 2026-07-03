@@ -508,6 +508,7 @@ const initApp = async () => {
     } else {
       ui.micBtn.classList.remove('listening');
     }
+    updateTasmieIndicatorVisibility();
   });
 
   observer.subscribe('progress', (val) => {
@@ -953,6 +954,13 @@ const initApp = async () => {
     ui.quranDisplay.appendChild(marker);
     
     ui.quranDisplay.classList.add('reveal-words');
+  }
+
+  function updateTasmieIndicatorVisibility() {
+    const indicator = document.getElementById('tasmie-indicator');
+    if (!indicator) return;
+    const showIndicator = AppState.speech.isListening && AppState.settings.hideTextMode;
+    indicator.style.display = showIndicator ? 'flex' : 'none';
   }
 
   ui.micBtn.addEventListener('click', () => {
@@ -1709,6 +1717,7 @@ const initApp = async () => {
     }
     AppState.settings.hideTextMode = isTextHidden;
     window.storageManager.save('quran_app_state', AppState);
+    updateTasmieIndicatorVisibility();
   };
 
   if (ui.btnToggleTextMinimal) {
