@@ -96,9 +96,6 @@ const initApp = async () => {
     btnInstall: document.getElementById('btn-install'),
     tafsirDisplay: document.getElementById('tafsir-display'),
     translationDisplay: document.getElementById('translation-display'),
-    btnViewQuran: document.getElementById('btn-view-quran'),
-    btnViewTafsir: document.getElementById('btn-view-tafsir'),
-    btnViewTranslation: document.getElementById('btn-view-translation'),
     listeningModal: document.getElementById('listening-mode-modal'),
     btnCloseListening: document.getElementById('btn-close-listening'),
     chkRepeatSurah: document.getElementById('chk-repeat-surah'),
@@ -736,37 +733,7 @@ const initApp = async () => {
   function closeTafsirModal() {
     ui.modalOverlay.style.display = 'none';
     if (ui.modalTafsir) ui.modalTafsir.style.display = 'none';
-    
-    // Reset view modes to just Quran when modal is closed
-    ui.btnViewQuran.classList.add('active');
-    ui.btnViewTafsir.classList.remove('active');
-    ui.btnViewTranslation.classList.remove('active');
   }
-
-  function updateViewMode(mode) {
-    ui.btnViewQuran.classList.toggle('active', mode === 'quran');
-    ui.btnViewTafsir.classList.toggle('active', mode === 'tafsir');
-    ui.btnViewTranslation.classList.toggle('active', mode === 'translation');
-    
-    const sectionTafsir = document.getElementById('modal-tafsir-section');
-    const sectionTranslation = document.getElementById('modal-translation-section');
-
-    if (mode === 'quran') {
-      closeTafsirModal();
-    } else if (mode === 'tafsir') {
-      if (sectionTafsir) sectionTafsir.style.display = 'block';
-      if (sectionTranslation) sectionTranslation.style.display = 'none';
-      openTafsirModal();
-    } else if (mode === 'translation') {
-      if (sectionTafsir) sectionTafsir.style.display = 'none';
-      if (sectionTranslation) sectionTranslation.style.display = 'block';
-      openTafsirModal();
-    }
-  }
-
-  ui.btnViewQuran.addEventListener('click', () => updateViewMode('quran'));
-  ui.btnViewTafsir.addEventListener('click', () => updateViewMode('tafsir'));
-  ui.btnViewTranslation.addEventListener('click', () => updateViewMode('translation'));
 
   if (ui.btnAyahInfo) {
     ui.btnAyahInfo.addEventListener('click', () => {
@@ -774,10 +741,6 @@ const initApp = async () => {
       const sectionTranslation = document.getElementById('modal-translation-section');
       if (sectionTafsir) sectionTafsir.style.display = 'block';
       if (sectionTranslation) sectionTranslation.style.display = 'block';
-      
-      ui.btnViewQuran.classList.remove('active');
-      ui.btnViewTafsir.classList.add('active');
-      ui.btnViewTranslation.classList.add('active');
       
       openTafsirModal();
     });
@@ -1522,9 +1485,6 @@ const initApp = async () => {
       if (ui.modalShare) ui.modalShare.style.display = 'none';
       if (ui.modalTafsir) {
         ui.modalTafsir.style.display = 'none';
-        ui.btnViewQuran.classList.add('active');
-        ui.btnViewTafsir.classList.remove('active');
-        ui.btnViewTranslation.classList.remove('active');
       }
       ui.modalOverlay.style.display = 'none';
       AppState.userRole = 'student';
