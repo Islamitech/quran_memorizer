@@ -124,7 +124,16 @@ const initApp = async () => {
     btnAyahInfo: document.getElementById('btn-ayah-info'),
     modalTafsir: document.getElementById('modal-tafsir'),
     btnCloseTafsir: document.getElementById('btn-close-tafsir'),
-    tafsirModalQuranText: document.getElementById('tafsir-modal-quran-text')
+    tafsirModalQuranText: document.getElementById('tafsir-modal-quran-text'),
+    
+    // Help & Guide Modal
+    modalHelp: document.getElementById('modal-help'),
+    btnCloseHelp: document.getElementById('btn-close-help'),
+    tabHelpFeatures: document.getElementById('tab-help-features'),
+    tabHelpTour: document.getElementById('tab-help-tour'),
+    helpContentFeatures: document.getElementById('help-content-features'),
+    helpContentTour: document.getElementById('help-content-tour'),
+    btnStartInteractiveTour: document.getElementById('btn-start-interactive-tour')
   };
 
   karaokeEngine.init(ui.audio, ui.quranDisplay);
@@ -1419,9 +1428,7 @@ const initApp = async () => {
     { target: '.header-controls', title: 'التنزيل والتشغيل دون اتصال 📲', description: 'يمكنك تثبيت التطبيق مباشرة على هاتفك كـ Web App. كما يتم حفظ السور التي استمعت إليها تلقائياً لتتمكن من تشغيلها بالكامل دون اتصال بالإنترنت.' }
   ]);
 
-  ui.btnTour.addEventListener('click', () => {
-    tour.start();
-  });
+  // btnTour listener is defined below in the helper setup
 
   // --- Teacher System Logic ---
   
@@ -1532,18 +1539,74 @@ const initApp = async () => {
       if (ui.listeningModal) ui.listeningModal.style.display = 'none';
       if (ui.modalDonate) ui.modalDonate.style.display = 'none';
       if (ui.modalShare) ui.modalShare.style.display = 'none';
-      if (ui.modalTafsir) {
-        ui.modalTafsir.style.display = 'none';
-      }
+      if (ui.modalTafsir) ui.modalTafsir.style.display = 'none';
+      if (ui.modalHelp) ui.modalHelp.style.display = 'none';
       ui.modalOverlay.style.display = 'none';
       AppState.userRole = 'student';
     });
   }
 
-  // Tour setup listener
-  if (ui.btnTour) {
+  // Help & Guide Modal Logic
+  if (ui.btnTour && ui.modalHelp) {
     ui.btnTour.addEventListener('click', () => {
-      tour.start();
+      if (ui.headerMoreDropdown) ui.headerMoreDropdown.classList.remove('show');
+      activateHelpTab('features');
+      ui.modalOverlay.style.display = 'block';
+      ui.modalHelp.style.display = 'flex';
+    });
+  }
+
+  if (ui.btnCloseHelp) {
+    ui.btnCloseHelp.addEventListener('click', () => {
+      ui.modalHelp.style.display = 'none';
+      ui.modalOverlay.style.display = 'none';
+    });
+  }
+
+  function activateHelpTab(tabName) {
+    if (tabName === 'features') {
+      if (ui.tabHelpFeatures) {
+        ui.tabHelpFeatures.style.borderBottom = '3px solid var(--accent-primary)';
+        ui.tabHelpFeatures.style.fontWeight = '700';
+        ui.tabHelpFeatures.style.color = 'var(--text-primary)';
+      }
+      if (ui.tabHelpTour) {
+        ui.tabHelpTour.style.borderBottom = '3px solid transparent';
+        ui.tabHelpTour.style.fontWeight = '500';
+        ui.tabHelpTour.style.color = 'var(--text-secondary)';
+      }
+      if (ui.helpContentFeatures) ui.helpContentFeatures.style.display = 'flex';
+      if (ui.helpContentTour) ui.helpContentTour.style.display = 'none';
+    } else {
+      if (ui.tabHelpTour) {
+        ui.tabHelpTour.style.borderBottom = '3px solid var(--accent-primary)';
+        ui.tabHelpTour.style.fontWeight = '700';
+        ui.tabHelpTour.style.color = 'var(--text-primary)';
+      }
+      if (ui.tabHelpFeatures) {
+        ui.tabHelpFeatures.style.borderBottom = '3px solid transparent';
+        ui.tabHelpFeatures.style.fontWeight = '500';
+        ui.tabHelpFeatures.style.color = 'var(--text-secondary)';
+      }
+      if (ui.helpContentTour) ui.helpContentTour.style.display = 'flex';
+      if (ui.helpContentFeatures) ui.helpContentFeatures.style.display = 'none';
+    }
+  }
+
+  if (ui.tabHelpFeatures) {
+    ui.tabHelpFeatures.addEventListener('click', () => activateHelpTab('features'));
+  }
+  if (ui.tabHelpTour) {
+    ui.tabHelpTour.addEventListener('click', () => activateHelpTab('tour'));
+  }
+
+  if (ui.btnStartInteractiveTour) {
+    ui.btnStartInteractiveTour.addEventListener('click', () => {
+      ui.modalHelp.style.display = 'none';
+      ui.modalOverlay.style.display = 'none';
+      setTimeout(() => {
+        tour.start();
+      }, 300);
     });
   }
 
