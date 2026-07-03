@@ -1093,11 +1093,19 @@ const initApp = async () => {
       // 2. Either the last word or second-to-last word of the reference must be matched somewhere in the spoken text, or spoken words count is >= refWordsCount
       let isCorrect = scoreCorrect;
       if (scoreCorrect && refWordsCount > 1) {
-        const lastWord = refWords[refWordsCount - 1];
-        const secondLastWord = refWords[refWordsCount - 2];
+        const normOpts = { removeDiacritics: true, unifyLetters: true };
+        const cleanLastWord = speechEngine.matchAlgo.normalizer.normalize(refWords[refWordsCount - 1], normOpts);
+        const cleanSecondLastWord = speechEngine.matchAlgo.normalizer.normalize(refWords[refWordsCount - 2], normOpts);
         
-        const isLastWordMatched = spokenWords.some(sw => speechEngine.matchAlgo.isWordMatch(sw, lastWord));
-        const isSecondLastMatched = spokenWords.some(sw => speechEngine.matchAlgo.isWordMatch(sw, secondLastWord));
+        const isLastWordMatched = spokenWords.some(sw => {
+          const cleanSw = speechEngine.matchAlgo.normalizer.normalize(sw, normOpts);
+          return speechEngine.matchAlgo.isWordMatch(cleanSw, cleanLastWord);
+        });
+        
+        const isSecondLastMatched = spokenWords.some(sw => {
+          const cleanSw = speechEngine.matchAlgo.normalizer.normalize(sw, normOpts);
+          return speechEngine.matchAlgo.isWordMatch(cleanSw, cleanSecondLastWord);
+        });
         
         const hasReachedEnd = (spokenWordsCount >= refWordsCount - 1) && 
                              (isLastWordMatched || isSecondLastMatched || spokenWordsCount >= refWordsCount);
@@ -1669,6 +1677,7 @@ const initApp = async () => {
         styleTag = document.createElement('style');
         styleTag.id = 'hide-text-style-rule';
         styleTag.innerHTML = `
+          #basmalah-container { display: none !important; }
           #current-ayah-display .word { display: none !important; }
           #tafsir-display, #translation-display { display: none !important; }
         `;
