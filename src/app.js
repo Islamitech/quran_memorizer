@@ -7,6 +7,28 @@ import { SpeechEngine } from './engines/SpeechEngine.js';
 import { InteractiveTour } from './components/InteractiveTour.js';
 import { DbManager } from './utils/DbManager.js';
 
+// Force update if app version has changed (handles aggressive PWA caching)
+const CURRENT_APP_VERSION = 'v93';
+if (localStorage.getItem('app_cache_ver') !== CURRENT_APP_VERSION) {
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.getRegistrations().then(regs => {
+      for (let reg of regs) {
+        reg.unregister();
+      }
+      caches.keys().then(keys => {
+        return Promise.all(keys.map(k => caches.delete(k)));
+      }).then(() => {
+        localStorage.setItem('app_cache_ver', CURRENT_APP_VERSION);
+        window.location.reload(true);
+      });
+    }).catch(() => {
+      localStorage.setItem('app_cache_ver', CURRENT_APP_VERSION);
+    });
+  } else {
+    localStorage.setItem('app_cache_ver', CURRENT_APP_VERSION);
+  }
+}
+
 // Init core utils
 window.storageManager = new StorageManager();
 window.dbManager = DbManager;
