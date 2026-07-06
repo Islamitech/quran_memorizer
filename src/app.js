@@ -8,7 +8,7 @@ import { InteractiveTour } from './components/InteractiveTour.js';
 import { DbManager } from './utils/DbManager.js';
 
 // Force update if app version has changed (handles aggressive PWA caching)
-const CURRENT_APP_VERSION = 'v97';
+const CURRENT_APP_VERSION = 'v98';
 if (localStorage.getItem('app_cache_ver') !== CURRENT_APP_VERSION) {
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.getRegistrations().then(regs => {
@@ -160,6 +160,7 @@ const initApp = async () => {
 
   karaokeEngine.init(ui.audio, ui.quranDisplay);
   let currentRecordedBlob = null;
+  let currentRecordedEchoEnabled = false;
   let listeningPlaylist = [];
   let currentPlaylistIndex = 0;
   let repeatSurahId = null;
@@ -386,6 +387,7 @@ const initApp = async () => {
     AppState.speech.latestScore = 0;
     ayahErrorCount = 0;
     currentRecordedBlob = null;
+    currentRecordedEchoEnabled = false;
     ui.speechResult.classList.remove('show');
     ui.btnSendTeacher.style.display = 'none';
 
@@ -396,8 +398,13 @@ const initApp = async () => {
         ui.btnPlayRecording.disabled = false;
         ui.btnPlayRecording.style.opacity = '1';
         ui.btnPlayRecording.style.color = '#0ea5e9'; // Blue indicates a saved recording exists
+        
+        // Restore echoEnabled state from report if available
+        const match = AppState.reports.find(r => r.surahId === AppState.current.surah.id && r.ayahNumber === ayahNumber);
+        currentRecordedEchoEnabled = match ? !!match.echoEnabled : false;
       } else {
         ui.btnPlayRecording.style.color = ''; // Default grey
+        currentRecordedEchoEnabled = false;
       }
     });
     
@@ -1303,6 +1310,7 @@ const initApp = async () => {
     // Update play button only if the recording belongs to the currently displayed Ayah
     if (AppState.current.surah.id === surahId && AppState.current.ayah.id === ayahId) {
       currentRecordedBlob = blob;
+      currentRecordedEchoEnabled = AppState.speech.liveEchoEnabled;
       ui.btnPlayRecording.disabled = false;
       ui.btnPlayRecording.style.opacity = '1';
       ui.btnPlayRecording.style.color = '#0ea5e9';
@@ -1550,8 +1558,8 @@ const initApp = async () => {
         lpFilter.connect(dryGain);
         dryGain.connect(currentPlayingCtx.destination);
         
-        // Apply Mosque Echo if enabled
-        if (AppState.speech.liveEchoEnabled) {
+        // Apply Mosque Echo if enabled at time of recording
+        if (currentRecordedEchoEnabled) {
           const wetGain = currentPlayingCtx.createGain();
           wetGain.gain.value = 0.28; // Elegant mosque echo mix
           
@@ -1726,6 +1734,195 @@ const initApp = async () => {
     return new Blob(byteArrays, { type: contentType });
   }
 
+  let activeReportPlayer = null;
+
+  async function stopActiveReportPlayer() {
+    if (activeReportPlayer) {
+      if (activeReportPlayer.source) {
+        try { activeReportPlayer.source.stop(); } catch(e) {}
+      }
+      if (activeReportPlayer.ctx && activeReportPlayer.ctx.state !== 'closed') {
+        try { await activeReportPlayer.ctx.close(); } catch(e) {}
+      }
+      clearInterval(activeReportPlayer.timer);
+      
+      const container = document.querySelector(`.custom-report-player[data-id="${activeReportPlayer.id}"]`);
+      if (container) {
+        const btn = container.querySelector('.play-report-btn');
+        if (btn) {
+          const playIcon = btn.querySelector('.play-icon');
+          const pauseIcon = btn.querySelector('.pause-icon');
+          if (playIcon) playIcon.style.display = 'block';
+          if (pauseIcon) pauseIcon.style.display = 'none';
+        }
+        const slider = container.querySelector('.player-slider');
+        if (slider) slider.value = 0;
+        const currTimeText = container.querySelector('.curr-time');
+        if (currTimeText) currTimeText.textContent = '0:00';
+      }
+      activeReportPlayer = null;
+    }
+  }
+
+  async function playReportAudio(reportId) {
+    if (activeReportPlayer && activeReportPlayer.id === reportId) {
+      await stopActiveReportPlayer();
+      return;
+    }
+    
+    await stopActiveReportPlayer();
+    
+    if (currentPlayingSource) {
+      currentPlayingSource.stop();
+      currentPlayingSource = null;
+      if (currentPlayingCtx) {
+        currentPlayingCtx.close();
+        currentPlayingCtx = null;
+      }
+      ui.btnPlayRecording.style.color = '';
+    }
+    
+    if (AppState.player.isPlaying) {
+      ui.audio.pause();
+      AppState.player.isPlaying = false;
+    }
+    
+    const report = AppState.reports.find(r => r.id === reportId);
+    if (!report || !report.audioBase64) return;
+    
+    const container = document.querySelector(`.custom-report-player[data-id="${reportId}"]`);
+    if (!container) return;
+    
+    const btn = container.querySelector('.play-report-btn');
+    if (!btn) return;
+    const playIcon = btn.querySelector('.play-icon');
+    const pauseIcon = btn.querySelector('.pause-icon');
+    const slider = container.querySelector('.player-slider');
+    const currTimeText = container.querySelector('.curr-time');
+    
+    if (playIcon) playIcon.style.display = 'none';
+    if (pauseIcon) pauseIcon.style.display = 'block';
+    
+    const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+    const ctx = new AudioContextClass();
+    if (ctx.state === 'suspended') {
+      try { await ctx.resume(); } catch(e) {}
+    }
+    
+    const mimeMatch = report.audioBase64.match(/^data:(audio\/[a-zA-Z0-9\-+.]+);base64,/);
+    const mimeType = mimeMatch ? mimeMatch[1] : 'audio/webm';
+    const blob = base64ToBlob(report.audioBase64, mimeType);
+    
+    const reader = new FileReader();
+    reader.onload = async function() {
+      try {
+        if (!ctx || ctx.state === 'closed') return;
+        const buffer = await ctx.decodeAudioData(reader.result);
+        const source = ctx.createBufferSource();
+        source.buffer = buffer;
+        
+        // 1. Highpass filter to remove low-frequency microphone rumble/hum
+        const hpFilter = ctx.createBiquadFilter();
+        hpFilter.type = 'highpass';
+        hpFilter.frequency.value = 110; // Hz
+        hpFilter.Q.value = 0.707;
+        
+        // 2. Peaking filter to boost vocal clarity
+        const presenceBoost = ctx.createBiquadFilter();
+        presenceBoost.type = 'peaking';
+        presenceBoost.frequency.value = 3000;
+        presenceBoost.Q.value = 1.0;
+        presenceBoost.gain.value = 5.0; // 5dB boost
+        
+        // 3. Lowpass filter
+        const lpFilter = ctx.createBiquadFilter();
+        lpFilter.type = 'lowpass';
+        lpFilter.frequency.value = 8500;
+        
+        source.connect(hpFilter);
+        hpFilter.connect(presenceBoost);
+        presenceBoost.connect(lpFilter);
+        
+        const dryGain = ctx.createGain();
+        dryGain.gain.value = 1.0;
+        lpFilter.connect(dryGain);
+        dryGain.connect(ctx.destination);
+        
+        // Mosque Echo if enabled when recorded
+        if (report.echoEnabled) {
+          const wetGain = ctx.createGain();
+          wetGain.gain.value = 0.28;
+          
+          const delay1 = ctx.createDelay(1.0);
+          const delay2 = ctx.createDelay(1.0);
+          const feedback1 = ctx.createGain();
+          const feedback2 = ctx.createGain();
+          
+          delay1.delayTime.value = 0.22;
+          delay2.delayTime.value = 0.38;
+          feedback1.gain.value = 0.32;
+          feedback2.gain.value = 0.22;
+          
+          delay1.connect(feedback1);
+          feedback1.connect(delay1);
+          delay2.connect(feedback2);
+          feedback2.connect(delay2);
+          
+          lpFilter.connect(delay1);
+          lpFilter.connect(delay2);
+          
+          delay1.connect(wetGain);
+          delay2.connect(wetGain);
+          
+          wetGain.connect(ctx.destination);
+        }
+        
+        const startTime = ctx.currentTime;
+        const duration = buffer.duration;
+        
+        source.start(0);
+        
+        const timer = setInterval(() => {
+          if (ctx.state === 'closed') return;
+          const elapsed = ctx.currentTime - startTime;
+          if (elapsed >= duration) {
+            stopActiveReportPlayer();
+          } else {
+            const percent = (elapsed / duration) * 100;
+            if (slider) slider.value = percent;
+            
+            const formatTime = (secs) => {
+              const m = Math.floor(secs / 60);
+              const s = Math.floor(secs % 60);
+              return `${m}:${s < 10 ? '0' : ''}${s}`;
+            };
+            if (currTimeText) currTimeText.textContent = formatTime(elapsed);
+          }
+        }, 100);
+        
+        activeReportPlayer = {
+          id: reportId,
+          source: source,
+          ctx: ctx,
+          startTime: startTime,
+          duration: duration,
+          timer: timer
+        };
+        
+        source.onended = () => {
+          if (activeReportPlayer && activeReportPlayer.id === reportId) {
+            stopActiveReportPlayer();
+          }
+        };
+      } catch(e) {
+        console.error("Decoder error", e);
+        if (playIcon) playIcon.style.display = 'block';
+        if (pauseIcon) pauseIcon.style.display = 'none';
+      }
+    };
+    reader.readAsArrayBuffer(blob);
+  }
+
   function renderTeacherReports() {
     ui.teacherReportsList.innerHTML = '';
     const reports = AppState.reports;
@@ -1759,15 +1956,29 @@ const initApp = async () => {
         }
       }
       
-      const audioHtml = audioSrc ? `<div class="report-audio"><audio src="${audioSrc}" controls></audio></div>` : '<p>لا يوجد تسجيل صوتي.</p>';
-      const extension = mimeType.includes('mp4') ? 'mp4' : 'webm';
-      
       const formatTime = (secs) => {
         const m = Math.floor(secs / 60);
         const s = Math.floor(secs % 60);
         return `${m}:${s < 10 ? '0' : ''}${s}`;
       };
-      
+
+      const audioHtml = audioSrc ? `
+        <div class="custom-report-player" data-id="${report.id}" style="display: flex; align-items: center; gap: 12px; margin: 12px 0; background: var(--bg-secondary); border-radius: 12px; padding: 10px 16px; border: 1px solid var(--border-color); box-sizing: border-box;">
+          <button class="play-report-btn" data-id="${report.id}" style="background: var(--accent-primary); border: none; width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; cursor: pointer; transition: all 0.2s ease; flex-shrink: 0;">
+            <svg class="play-icon" width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+            <svg class="pause-icon" width="14" height="14" viewBox="0 0 24 24" fill="currentColor" style="display: none;"><rect x="6" y="4" width="4" height="16"></rect><rect x="14" y="4" width="4" height="16"></rect></svg>
+          </button>
+          <div class="player-progress-container" style="flex: 1; display: flex; flex-direction: column; gap: 4px;">
+            <input type="range" class="player-slider" value="0" min="0" max="100" style="width: 100%; height: 4px; border-radius: 2px; -webkit-appearance: none; background: var(--border-color); outline: none; cursor: pointer; pointer-events: none;">
+            <div style="display: flex; justify-content: space-between; font-size: 0.75rem; color: var(--text-secondary); direction: ltr;">
+              <span class="curr-time">0:00</span>
+              <span class="total-time">${formatTime(report.duration || 0)}</span>
+            </div>
+          </div>
+          ${report.echoEnabled ? '<span style="font-size: 0.7rem; color: #0ea5e9; background: rgba(14, 165, 233, 0.1); padding: 2px 6px; border-radius: 4px; font-weight: bold; flex-shrink: 0; font-family: var(--font-arabic);">صـدى</span>' : ''}
+        </div>
+      ` : '<p>لا يوجد تسجيل صوتي.</p>';
+      const extension = mimeType.includes('mp4') ? 'mp4' : 'webm';
       const durationStr = report.duration ? ` | مدة التسجيل: ${formatTime(report.duration)}` : '';
       
       card.innerHTML = `
@@ -1801,6 +2012,13 @@ const initApp = async () => {
 
   // Register event delegation click listener for report action buttons
   ui.teacherReportsList.addEventListener('click', (e) => {
+    const playReportBtn = e.target.closest('.play-report-btn');
+    if (playReportBtn) {
+      const reportId = parseInt(playReportBtn.getAttribute('data-id'));
+      playReportAudio(reportId);
+      return;
+    }
+
     const targetBtn = e.target.closest('.report-action-btn');
     if (!targetBtn) return;
     
@@ -1840,6 +2058,7 @@ const initApp = async () => {
       AppState.userRole = 'student';
       ui.modalOverlay.style.display = 'none';
       ui.teacherModal.style.display = 'none';
+      stopActiveReportPlayer();
     }
   });
 
@@ -1847,11 +2066,15 @@ const initApp = async () => {
     AppState.userRole = 'student';
     ui.modalOverlay.style.display = 'none';
     ui.teacherModal.style.display = 'none';
+    stopActiveReportPlayer();
   });
 
   if (ui.modalOverlay) {
     ui.modalOverlay.addEventListener('click', () => {
-      if (ui.teacherModal) ui.teacherModal.style.display = 'none';
+      if (ui.teacherModal) {
+        ui.teacherModal.style.display = 'none';
+        stopActiveReportPlayer();
+      }
       if (ui.listeningModal) ui.listeningModal.style.display = 'none';
       if (ui.modalDonate) ui.modalDonate.style.display = 'none';
       if (ui.modalShare) ui.modalShare.style.display = 'none';
