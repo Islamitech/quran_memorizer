@@ -1294,13 +1294,95 @@ const initApp = async () => {
     }
     
     if (!speechEngine.isSupported) {
-      ui.speechResult.innerHTML = '✅ <strong>تم تسجيل تلاوتك بنجاح!</strong> اضغط على زر التشغيل الأزرق للاستماع لصوتك وتقييم حفظك ذاتياً، أو إرسالها لمعلمك.';
-      ui.speechResult.classList.add('show');
-      setTimeout(() => {
-        if (ui.speechResult.innerHTML.includes('تم تسجيل تلاوتك بنجاح')) {
-          ui.speechResult.classList.remove('show');
+      if (AppState.settings.hideTextMode) {
+        ui.speechResult.innerHTML = `
+          <div class="self-eval-container" style="display: flex; flex-direction: column; align-items: center; gap: 8px; width: 100%; padding: 10px; background: rgba(14, 165, 233, 0.06); border-radius: 12px; border: 1px solid rgba(14, 165, 233, 0.2); box-sizing: border-box;">
+            <p style="margin: 0; font-size: 0.95rem; color: var(--text-primary); font-weight: 700; text-align: center;">
+              🎤 تم تسجيل تلاوتك! استمع إليها ذاتياً وقيم حفظك:
+            </p>
+            <div style="display: flex; gap: 12px; width: 100%; justify-content: center; margin-top: 6px;">
+              <button id="btn-eval-correct" class="animate-hover" style="background: #22c55e; color: white; border: none; padding: 10px 20px; border-radius: 10px; font-family: var(--font-arabic); font-size: 0.95rem; font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 6px; box-shadow: 0 3px 8px rgba(34, 197, 94, 0.25); transition: all 0.2s ease;">
+                <span>قرأتها صحيحة ✅</span>
+              </button>
+              <button id="btn-eval-wrong" class="animate-hover" style="background: #ef4444; color: white; border: none; padding: 10px 20px; border-radius: 10px; font-family: var(--font-arabic); font-size: 0.95rem; font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 6px; box-shadow: 0 3px 8px rgba(239, 68, 68, 0.25); transition: all 0.2s ease;">
+                <span>أريد المحاولة ❌</span>
+              </button>
+            </div>
+          </div>
+        `;
+        ui.speechResult.classList.add('show');
+
+        // Bind events to evaluation buttons
+        const btnCorrect = document.getElementById('btn-eval-correct');
+        const btnWrong = document.getElementById('btn-eval-wrong');
+
+        if (btnCorrect) {
+          btnCorrect.addEventListener('click', () => {
+            isRecitationTransitioning = true;
+            updateTasmieIndicatorVisibility();
+            
+            // 1. Reveal words of current active Ayah
+            ui.quranDisplay.classList.add('reveal-words');
+            
+            markAyahAsMastered(surahId, ayahId);
+            
+            const isChildMode = document.body.classList.contains('theme-child');
+            if (isChildMode) {
+              playChildSuccessSound();
+              triggerEmojiExplosion();
+              
+              const successMsgs = [
+                '🏆✨ <strong>أنت بطل الحفظ المتميز!</strong> تبارك الرحمن قراءة رائعة وممتازة...',
+                '🌟🎈 <strong>ما شاء الله!</strong> قراءتك صحيحة وجميلة جداً يا بطل...',
+                '⭐🎉 <strong>أحسنت يا ذكي!</strong> تلاوة صحيحة، استمر في هذا الأداء الرائع...',
+                '🌈👏 <strong>ممتاز جداً!</strong> حافظ على هذا المستوى الجميل يا بطل...'
+              ];
+              ui.speechResult.innerHTML = successMsgs[Math.floor(Math.random() * successMsgs.length)];
+            } else {
+              ui.speechResult.innerHTML = '✔️ <strong>تسميع صحيح ومقبول!</strong> - الانتقال للآية التالية...';
+            }
+            ui.speechResult.classList.add('show');
+            ui.quranDisplay.classList.remove('recitation-error');
+
+            correctTransitionTimeout = setTimeout(() => {
+              ui.quranDisplay.classList.remove('reveal-words');
+              isRecitationTransitioning = false;
+              updateTasmieIndicatorVisibility();
+              correctTransitionTimeout = null;
+
+              const next = parseInt(AppState.current.ayah.id) + 1;
+              if (next <= AppState.current.surah.ayahCount) {
+                transitionToAyahWithRecording(next);
+              } else {
+                speechEngine.stop(false);
+                if (isChildMode) {
+                  ui.speechResult.innerHTML = '🎉🏆 <strong>تهانينا يا بطل الأبطال!</strong> لقد أتممت تسميع السورة كاملة بنجاح! 👑🎈';
+                } else {
+                  ui.speechResult.innerHTML = '🎉 <strong>تهانينا!</strong> لقد أتممت تسميع السورة كاملة بنجاح!';
+                }
+                ui.speechResult.classList.add('show');
+                setTimeout(() => ui.speechResult.classList.remove('show'), 5000);
+              }
+            }, 1800);
+          });
         }
-      }, 5000);
+
+        if (btnWrong) {
+          btnWrong.addEventListener('click', () => {
+            markAyahAsUnmastered(surahId, ayahId);
+            ui.speechResult.classList.remove('show');
+          });
+        }
+      } else {
+        // Normal Mode (Text visible) in Audio-only mode
+        ui.speechResult.innerHTML = '✅ <strong>تم تسجيل تلاوتك بنجاح!</strong> اضغط على زر التشغيل الأزرق للاستماع لصوتك وتقييم حفظك ذاتياً، أو إرسالها لمعلمك.';
+        ui.speechResult.classList.add('show');
+        setTimeout(() => {
+          if (ui.speechResult.innerHTML.includes('تم تسجيل تلاوتك بنجاح')) {
+            ui.speechResult.classList.remove('show');
+          }
+        }, 5000);
+      }
     } else if (!ui.speechResult.classList.contains('show')) {
       ui.speechResult.textContent = 'تم تسجيل تلاوتك وحفظها وإرسالها للمعلم تلقائياً! ✔️';
       ui.speechResult.classList.add('show');
