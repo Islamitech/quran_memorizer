@@ -122,8 +122,6 @@ export class SpeechEngine {
         this.safeStartRecognition(3);
       }
       
-      // Determine recording stream: apply echo effect if enabled
-      let recordingStream = this.activeStream;
       
       if (AppState.speech.liveEchoEnabled) {
         try {
@@ -153,26 +151,21 @@ export class SpeechEngine {
           delay2.connect(feedback2);
           feedback2.connect(delay2);
           
-          // Create a destination stream to capture the processed audio
-          const dest = this.liveEchoCtx.createMediaStreamDestination();
-          
           this.liveEchoSource.connect(dryNode);
-          dryNode.connect(dest);
+          dryNode.connect(this.liveEchoCtx.destination);
+          
           this.liveEchoSource.connect(delay1);
           this.liveEchoSource.connect(delay2);
           delay1.connect(wetNode);
           delay2.connect(wetNode);
-          wetNode.connect(dest);
-          
-          recordingStream = dest.stream;
+          wetNode.connect(this.liveEchoCtx.destination);
         } catch(echoErr) {
-          console.warn("Echo setup failed, recording raw:", echoErr);
-          recordingStream = this.activeStream;
+          console.warn("Echo setup failed:", echoErr);
         }
       }
       
-      // Create new MediaRecorder for this ayah segment
-      this.mediaRecorder = new MediaRecorder(recordingStream);
+      // Create new MediaRecorder using the raw microphone stream to prevent iOS Safari crashes
+      this.mediaRecorder = new MediaRecorder(this.activeStream);
       this.audioChunks = [];
       
       this.mediaRecorder.ondataavailable = e => {
