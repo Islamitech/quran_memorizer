@@ -8,7 +8,7 @@ import { InteractiveTour } from './components/InteractiveTour.js';
 import { DbManager } from './utils/DbManager.js';
 
 // Force update if app version has changed (handles aggressive PWA caching)
-const CURRENT_APP_VERSION = 'v96';
+const CURRENT_APP_VERSION = 'v97';
 if (localStorage.getItem('app_cache_ver') !== CURRENT_APP_VERSION) {
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.getRegistrations().then(regs => {
