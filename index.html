@@ -3,6 +3,29 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <script>
+    // Force cache refresh when app version changes to ensure latest updates are loaded
+    const CURRENT_VERSION = 'v90';
+    if (localStorage.getItem('app_cache_ver') !== CURRENT_VERSION) {
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.getRegistrations().then(regs => {
+          for (let reg of regs) {
+            reg.unregister();
+          }
+          caches.keys().then(keys => {
+            return Promise.all(keys.map(k => caches.delete(k)));
+          }).then(() => {
+            localStorage.setItem('app_cache_ver', CURRENT_VERSION);
+            window.location.reload(true);
+          });
+        }).catch(() => {
+          localStorage.setItem('app_cache_ver', CURRENT_VERSION);
+        });
+      } else {
+        localStorage.setItem('app_cache_ver', CURRENT_VERSION);
+      }
+    }
+  </script>
   <title>محفّظ القرآن الكريم 📖</title>
   <meta name="description" content="محفّظ القرآن الكريم - رفيقك التفاعلي الذكي لحفظ المصحف الشريف بتلاوة وتسميع ميسرين، صدى المسجد، تشغيل بالخلفية، ووضع مخصص للأطفال مبهج مع العمل الكامل دون إنترنت.">
   
@@ -505,6 +528,6 @@
     </div>
   </div>
 
-  <script type="module" src="./src/app.js"></script>
+  <script type="module" src="./src/app.js?v=90"></script>
 </body>
 </html>
