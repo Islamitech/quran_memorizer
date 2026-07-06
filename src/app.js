@@ -1331,7 +1331,7 @@ const initApp = async () => {
   let currentPlayingSource = null;
   let currentPlayingCtx = null;
 
-  ui.btnPlayRecording.addEventListener('click', () => {
+  ui.btnPlayRecording.addEventListener('click', async () => {
     if (!currentRecordedBlob) return;
     
     // Stop any playing reciter audio
