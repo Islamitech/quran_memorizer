@@ -1481,79 +1481,108 @@ const initApp = async () => {
       };
     };
 
-    if (AppState.speech.liveEchoEnabled) {
-      // Play with Mosque Echo (with fallback)
-      const AudioContextClass = window.AudioContext || window.webkitAudioContext;
-      currentPlayingCtx = new AudioContextClass();
-      if (currentPlayingCtx.state === 'suspended') {
-        try { await currentPlayingCtx.resume(); } catch(e) {}
-      }
-      
-      const reader = new FileReader();
-      reader.onload = async function() {
-        try {
-          if (!currentPlayingCtx) return;
-          const buffer = await currentPlayingCtx.decodeAudioData(reader.result);
-          currentPlayingSource = currentPlayingCtx.createBufferSource();
-          currentPlayingSource.buffer = buffer;
-          
-          const dryNode = currentPlayingCtx.createGain();
-          const wetNode = currentPlayingCtx.createGain();
+    // Playback with Web Audio API for noise filtering and optional mosque echo
+    const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+    currentPlayingCtx = new AudioContextClass();
+    if (currentPlayingCtx.state === 'suspended') {
+      try { await currentPlayingCtx.resume(); } catch(e) {}
+    }
+    
+    const reader = new FileReader();
+    reader.onload = async function() {
+      try {
+        if (!currentPlayingCtx) return;
+        const buffer = await currentPlayingCtx.decodeAudioData(reader.result);
+        currentPlayingSource = currentPlayingCtx.createBufferSource();
+        currentPlayingSource.buffer = buffer;
+        
+        // 1. Highpass filter to remove low-frequency microphone rumble/hum
+        const hpFilter = currentPlayingCtx.createBiquadFilter();
+        hpFilter.type = 'highpass';
+        hpFilter.frequency.value = 110; // Hz
+        hpFilter.Q.value = 0.707;
+        
+        // 2. Peaking filter to boost vocal clarity (presence range around 3kHz)
+        const presenceBoost = currentPlayingCtx.createBiquadFilter();
+        presenceBoost.type = 'peaking';
+        presenceBoost.frequency.value = 3000; // Hz
+        presenceBoost.Q.value = 1.0;
+        presenceBoost.gain.value = 5.0; // dB boost for clarity
+        
+        // 3. Lowpass filter to cut out high-frequency hiss/noise
+        const lpFilter = currentPlayingCtx.createBiquadFilter();
+        lpFilter.type = 'lowpass';
+        lpFilter.frequency.value = 8500; // Hz
+        
+        // Connect source to vocal filters pipeline
+        currentPlayingSource.connect(hpFilter);
+        hpFilter.connect(presenceBoost);
+        presenceBoost.connect(lpFilter);
+        
+        // Create gain nodes for wet/dry mix
+        const dryGain = currentPlayingCtx.createGain();
+        dryGain.gain.value = 1.0; // Keep original voice loud and clear
+        
+        // Connect clean filtered voice to destination
+        lpFilter.connect(dryGain);
+        dryGain.connect(currentPlayingCtx.destination);
+        
+        // Apply Mosque Echo if enabled
+        if (AppState.speech.liveEchoEnabled) {
+          const wetGain = currentPlayingCtx.createGain();
+          wetGain.gain.value = 0.28; // Elegant mosque echo mix
           
           const delay1 = currentPlayingCtx.createDelay(1.0);
           const delay2 = currentPlayingCtx.createDelay(1.0);
           const feedback1 = currentPlayingCtx.createGain();
           const feedback2 = currentPlayingCtx.createGain();
           
-          delay1.delayTime.value = 0.18;
-          delay2.delayTime.value = 0.28;
+          delay1.delayTime.value = 0.22; // Mosque size delay 1
+          delay2.delayTime.value = 0.38; // Mosque size delay 2
+          feedback1.gain.value = 0.32; // Tail feedback 1
+          feedback2.gain.value = 0.22; // Tail feedback 2
           
-          feedback1.gain.value = 0.18; 
-          feedback2.gain.value = 0.15;
-          
-          dryNode.gain.value = 1.0;
-          wetNode.gain.value = 0.18; 
-          
+          // Connect Delay 1 loop
           delay1.connect(feedback1);
           feedback1.connect(delay1);
           
+          // Connect Delay 2 loop
           delay2.connect(feedback2);
           feedback2.connect(delay2);
           
-          currentPlayingSource.connect(dryNode);
-          dryNode.connect(currentPlayingCtx.destination);
+          // Route filtered voice into delays
+          lpFilter.connect(delay1);
+          lpFilter.connect(delay2);
           
-          currentPlayingSource.connect(delay1);
-          currentPlayingSource.connect(delay2);
+          // Route delays to wetGain
+          delay1.connect(wetGain);
+          delay2.connect(wetGain);
           
-          delay1.connect(wetNode);
-          delay2.connect(wetNode);
-          wetNode.connect(currentPlayingCtx.destination);
-          
-          currentPlayingSource.start(0);
-          ui.btnPlayRecording.style.color = 'var(--accent-primary)';
-          
-          currentPlayingSource.onended = () => {
-            ui.btnPlayRecording.style.color = '';
-            currentPlayingSource = null;
-            if (currentPlayingCtx) {
-              currentPlayingCtx.close();
-              currentPlayingCtx = null;
-            }
-          };
-        } catch (e) {
-          console.error("Decoding audio failed, falling back to natural playback", e);
+          // Route wetGain to destination (speakers)
+          wetGain.connect(currentPlayingCtx.destination);
+        }
+        
+        currentPlayingSource.start(0);
+        ui.btnPlayRecording.style.color = 'var(--accent-primary)';
+        
+        currentPlayingSource.onended = () => {
+          ui.btnPlayRecording.style.color = '';
+          currentPlayingSource = null;
           if (currentPlayingCtx) {
-            try { currentPlayingCtx.close(); } catch(err) {}
+            currentPlayingCtx.close();
             currentPlayingCtx = null;
           }
-          playNaturally();
+        };
+      } catch (err) {
+        console.error("Web Audio playback failed, falling back to natural audio play:", err);
+        if (currentPlayingCtx) {
+          try { currentPlayingCtx.close(); } catch(e) {}
+          currentPlayingCtx = null;
         }
-      };
-      reader.readAsArrayBuffer(currentRecordedBlob);
-    } else {
-      playNaturally();
-    }
+        playNaturally();
+      }
+    };
+    reader.readAsArrayBuffer(currentRecordedBlob);
   });
 
   window.addEventListener('speechend', (e) => {
