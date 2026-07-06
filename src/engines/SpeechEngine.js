@@ -127,72 +127,7 @@ export class SpeechEngine {
       }
       
       
-      if (AppState.speech.liveEchoEnabled) {
-        try {
-          const AudioCtx = window.AudioContext || window.webkitAudioContext;
-          this.liveEchoCtx = new AudioCtx();
-          if (this.liveEchoCtx.state === 'suspended') {
-            await this.liveEchoCtx.resume();
-          }
-          this.liveEchoSource = this.liveEchoCtx.createMediaStreamSource(this.activeStream);
-          
-          const dryNode = this.liveEchoCtx.createGain();
-          const wetNode = this.liveEchoCtx.createGain();
-          const delay1 = this.liveEchoCtx.createDelay(1.0);
-          const delay2 = this.liveEchoCtx.createDelay(1.0);
-          const feedback1 = this.liveEchoCtx.createGain();
-          const feedback2 = this.liveEchoCtx.createGain();
-          
-          delay1.delayTime.value = 0.22; // Mosque size delay 1
-          delay2.delayTime.value = 0.38; // Mosque size delay 2
-          feedback1.gain.value = 0.32; // Reverb tail 1
-          feedback2.gain.value = 0.22; // Reverb tail 2
-          dryNode.gain.value = 1.0;
-          wetNode.gain.value = 0.28; // Beautiful mosque reverb mix
-          
-          // Audio enhancement filters for pristine voice quality
-          const hpFilter = this.liveEchoCtx.createBiquadFilter();
-          hpFilter.type = 'highpass';
-          hpFilter.frequency.value = 110; // Filter low rumble
-          hpFilter.Q.value = 0.707;
-          
-          const presenceBoost = this.liveEchoCtx.createBiquadFilter();
-          presenceBoost.type = 'peaking';
-          presenceBoost.frequency.value = 3000; // Boost voice presence
-          presenceBoost.Q.value = 1.0;
-          presenceBoost.gain.value = 5.0; // 5dB clarity boost
-          
-          const lpFilter = this.liveEchoCtx.createBiquadFilter();
-          lpFilter.type = 'lowpass';
-          lpFilter.frequency.value = 8500; // Filter high hiss
-          
-          // Connect stream to voice filters pipeline
-          this.liveEchoSource.connect(hpFilter);
-          hpFilter.connect(presenceBoost);
-          presenceBoost.connect(lpFilter);
-          
-          // Connect filtered output to dry output (direct speaker)
-          lpFilter.connect(dryNode);
-          dryNode.connect(this.liveEchoCtx.destination);
-          
-          // Connect delay loops
-          delay1.connect(feedback1);
-          feedback1.connect(delay1);
-          delay2.connect(feedback2);
-          feedback2.connect(delay2);
-          
-          // Route filtered voice into delays
-          lpFilter.connect(delay1);
-          lpFilter.connect(delay2);
-          
-          // Route delays to wet output
-          delay1.connect(wetNode);
-          delay2.connect(wetNode);
-          wetNode.connect(this.liveEchoCtx.destination);
-        } catch(echoErr) {
-          console.warn("Echo setup failed:", echoErr);
-        }
-      }
+      
       
       // Create new MediaRecorder using the raw microphone stream to prevent iOS Safari crashes
       this.mediaRecorder = new MediaRecorder(this.activeStream);
