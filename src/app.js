@@ -334,6 +334,13 @@ const initApp = async () => {
   }
 
   function loadAyah(ayahNumber, arabicData) {
+    if (correctTransitionTimeout) {
+      clearTimeout(correctTransitionTimeout);
+      correctTransitionTimeout = null;
+    }
+    ui.quranDisplay.classList.remove('reveal-words');
+    updateTasmieIndicatorVisibility();
+
     if(!arabicData) {
         // Find in cache
         const cacheKey = `surah_${AppState.current.surah.id}`;
@@ -647,8 +654,10 @@ const initApp = async () => {
     }
     
     isRecitationTransitioning = true;
+    updateTasmieIndicatorVisibility();
     setTimeout(() => {
       isRecitationTransitioning = false;
+      updateTasmieIndicatorVisibility();
     }, 2000); // 2.0s safety window to allow speech engine to completely restart and ignore any previous trailing words
     
     loadAyah(targetAyah);
@@ -959,7 +968,10 @@ const initApp = async () => {
   function updateTasmieIndicatorVisibility() {
     const indicator = document.getElementById('tasmie-indicator');
     if (!indicator) return;
-    const showIndicator = AppState.speech.isListening && AppState.settings.hideTextMode;
+    const showIndicator = AppState.speech.isListening && 
+                          AppState.settings.hideTextMode && 
+                          !ui.quranDisplay.classList.contains('reveal-words') &&
+                          !isRecitationTransitioning;
     indicator.style.display = showIndicator ? 'flex' : 'none';
   }
 
@@ -1141,6 +1153,7 @@ const initApp = async () => {
         // If the score is correct, reveal the ayah and auto-advance
         if (isCorrect && !correctTransitionTimeout) {
           isRecitationTransitioning = true;
+          updateTasmieIndicatorVisibility();
           // Play sounds & rewards if child mode is active
           if (isChildMode) {
             playChildSuccessSound();
@@ -1149,6 +1162,7 @@ const initApp = async () => {
 
           // 1. Reveal words of current active Ayah
           ui.quranDisplay.classList.add('reveal-words');
+          updateTasmieIndicatorVisibility();
           
           if (isChildMode) {
             const successMsgs = [
@@ -1169,6 +1183,7 @@ const initApp = async () => {
           // 3. Set timeout to transition to next Ayah and keep mic recording
           correctTransitionTimeout = setTimeout(() => {
             ui.quranDisplay.classList.remove('reveal-words');
+            updateTasmieIndicatorVisibility();
             correctTransitionTimeout = null;
             
             const next = parseInt(AppState.current.ayah.id) + 1;
@@ -1483,7 +1498,14 @@ const initApp = async () => {
         }
         ui.speechResult.classList.add('show');
       } else {
-        ui.speechResult.classList.remove('show');
+        // If they finished recording, but no speech was recognized (silent or extremely low volume)
+        ui.speechResult.innerHTML = '⚠️ <strong>تنبيه:</strong> لم يتم الكشف عن صوت أو تلاوة. يرجى البدء بالتسميع ومحاولة القراءة بصوت واضح.';
+        ui.speechResult.classList.add('show');
+        setTimeout(() => {
+          if (ui.speechResult.innerHTML.includes('لم يتم الكشف عن صوت')) {
+            ui.speechResult.classList.remove('show');
+          }
+        }, 4000);
       }
     } else {
       // Normal mode (text visible): show final score when recording stops
