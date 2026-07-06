@@ -7,7 +7,18 @@ export class SpeechEngine {
     this.recognition = null;
     this.mediaRecorder = null;
     this.audioChunks = [];
-    this.isSupported = 'webkitSpeechRecognition' in window || 'SpeechRecognition' in window;
+    // Detect iOS standalone PWA mode (where Apple disabled Web Speech API)
+    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || 
+                  (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+    const isStandalone = window.navigator.standalone === true || 
+                         window.matchMedia('(display-mode: standalone)').matches;
+    
+    if (isIOS && isStandalone) {
+      this.isSupported = false;
+    } else {
+      this.isSupported = 'webkitSpeechRecognition' in window || 'SpeechRecognition' in window;
+    }
+    
     this.matchAlgo = new MatchAlgorithm();
     
     // Live echo nodes
@@ -44,17 +55,23 @@ export class SpeechEngine {
       this.recognition.onend = null;
     }
     
-    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-    this.recognition = new SpeechRecognition();
-    
-    this.recognition.lang = 'ar-SA';
-    this.recognition.continuous = true;
-    this.recognition.interimResults = true;
-    this.recognition.maxAlternatives = 1;
-    
-    this.recognition.onresult = this.handleResults.bind(this);
-    this.recognition.onerror = this.handleError.bind(this);
-    this.recognition.onend = this.handleEnd.bind(this);
+    try {
+      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+      this.recognition = new SpeechRecognition();
+      
+      this.recognition.lang = 'ar-SA';
+      this.recognition.continuous = true;
+      this.recognition.interimResults = true;
+      this.recognition.maxAlternatives = 1;
+      
+      this.recognition.onresult = this.handleResults.bind(this);
+      this.recognition.onerror = this.handleError.bind(this);
+      this.recognition.onend = this.handleEnd.bind(this);
+    } catch(err) {
+      console.warn("SpeechRecognition instantiation failed, falling back to audio-only:", err);
+      this.isSupported = false;
+      this.recognition = null;
+    }
   }
 
   /**
