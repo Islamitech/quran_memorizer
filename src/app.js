@@ -8,7 +8,7 @@ import { InteractiveTour } from './components/InteractiveTour.js';
 import { DbManager } from './utils/DbManager.js';
 
 // Force update if app version has changed (handles aggressive PWA caching)
-const CURRENT_APP_VERSION = 'v93';
+const CURRENT_APP_VERSION = 'v94';
 if (localStorage.getItem('app_cache_ver') !== CURRENT_APP_VERSION) {
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.getRegistrations().then(regs => {
@@ -1706,6 +1706,25 @@ const initApp = async () => {
 
   // --- Teacher System Logic ---
   
+  function base64ToBlob(base64Data, contentType = '') {
+    const sliceSize = 1024;
+    const base64WithoutHeader = base64Data.split(',')[1] || base64Data;
+    const byteCharacters = atob(base64WithoutHeader);
+    const byteArrays = [];
+    
+    for (let offset = 0; offset < byteCharacters.length; offset += sliceSize) {
+      const slice = byteCharacters.slice(offset, offset + sliceSize);
+      const byteNumbers = new Array(slice.length);
+      for (let i = 0; i < slice.length; i++) {
+        byteNumbers[i] = slice.charCodeAt(i);
+      }
+      const byteArray = new Uint8Array(byteNumbers);
+      byteArrays.push(byteArray);
+    }
+    
+    return new Blob(byteArrays, { type: contentType });
+  }
+
   function renderTeacherReports() {
     ui.teacherReportsList.innerHTML = '';
     const reports = AppState.reports;
@@ -1726,7 +1745,21 @@ const initApp = async () => {
       const card = document.createElement('div');
       card.className = 'report-card';
       
-      const audioHtml = report.audioBase64 ? `<div class="report-audio"><audio src="${report.audioBase64}" controls></audio></div>` : '<p>لا يوجد تسجيل صوتي.</p>';
+      let audioSrc = '';
+      let mimeType = 'audio/webm';
+      if (report.audioBase64) {
+        try {
+          const mimeMatch = report.audioBase64.match(/^data:(audio\/[a-zA-Z0-9\-+.]+);base64,/);
+          mimeType = mimeMatch ? mimeMatch[1] : 'audio/webm';
+          const blob = base64ToBlob(report.audioBase64, mimeType);
+          audioSrc = URL.createObjectURL(blob);
+        } catch(e) {
+          console.error("Failed to convert base64 to blob URL", e);
+        }
+      }
+      
+      const audioHtml = audioSrc ? `<div class="report-audio"><audio src="${audioSrc}" controls></audio></div>` : '<p>لا يوجد تسجيل صوتي.</p>';
+      const extension = mimeType.includes('mp4') ? 'mp4' : 'webm';
       
       card.innerHTML = `
         <div class="report-header">
@@ -1739,7 +1772,7 @@ const initApp = async () => {
           التاريخ: ${new Date(report.timestamp).toLocaleString()}
         </div>
         <div class="report-actions">
-          <a href="${report.audioBase64}" download="سورة_${report.surahName}_آية_${report.ayahNumber}.webm" class="report-action-btn download-btn" title="تنزيل التسجيل">
+          <a href="${audioSrc || '#'}" download="سورة_${report.surahName}_آية_${report.ayahNumber}.${extension}" class="report-action-btn download-btn" title="تنزيل التسجيل">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
             <span>تنزيل</span>
           </a>
