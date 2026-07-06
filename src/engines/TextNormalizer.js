@@ -84,6 +84,13 @@ export class TextNormalizer {
       result = result.replace(/ؤ/g, 'و');
       result = result.replace(/ئ/g, 'ي');
       result = result.replace(/ى/g, 'ي');
+      
+      // Unify spelling of disconnected letter phonemes (muqatta'ah)
+      result = result.replace(/راء/g, 'را');
+      result = result.replace(/هاء/g, 'ها');
+      result = result.replace(/ياء/g, 'يا');
+      result = result.replace(/طاء/g, 'طا');
+      result = result.replace(/حاء/g, 'حا');
     }
 
     // Normalize Uthmani spelling variants to standard spoken spellings
