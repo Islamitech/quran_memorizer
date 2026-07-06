@@ -74,8 +74,9 @@ export class SpeechEngine {
   }
 
   async start() {
-    if (!this.isSupported) {
-      alert('عذراً، متصفحك لا يدعم خاصية التعرف على الصوت. يرجى استخدام Google Chrome.');
+    const hasMediaRecorder = 'MediaRecorder' in window && navigator.mediaDevices && navigator.mediaDevices.getUserMedia;
+    if (!this.isSupported && !hasMediaRecorder) {
+      alert('عذراً، متصفحك لا يدعم تسجيل الصوت أو خاصية التعرف عليه.');
       return;
     }
     if (this.isRecording) return;
@@ -98,9 +99,11 @@ export class SpeechEngine {
         this.activeStream = await navigator.mediaDevices.getUserMedia({ audio: true });
       }
       
-      // 2. Reinitialize and start recognition
-      this.initRecognition();
-      this.safeStartRecognition(3);
+      // 2. Reinitialize and start recognition only if supported
+      if (this.isSupported) {
+        this.initRecognition();
+        this.safeStartRecognition(3);
+      }
       
       // Determine recording stream: apply echo effect if enabled
       let recordingStream = this.activeStream;
@@ -238,7 +241,6 @@ export class SpeechEngine {
    * @param {boolean} restartForNextAyah - If true, automatically starts a new recording after saving.
    */
   stop(restartForNextAyah = false) {
-    if (!this.isSupported) return;
     if (!this.isRecording) return;
     
     this.isStopping = true;  // CRITICAL: Prevent handleEnd from restarting recognition
@@ -248,10 +250,12 @@ export class SpeechEngine {
     this.currentRecordingText = AppState.speech.detectedText || '';
     this.currentRecordingScore = AppState.speech.latestScore || 0;
     
-    // Stop speech recognition
-    try {
-      this.recognition.abort();
-    } catch(e) {}
+    // Stop speech recognition only if supported
+    if (this.isSupported && this.recognition) {
+      try {
+        this.recognition.abort();
+      } catch(e) {}
+    }
     
     // Stop MediaRecorder - this triggers onstop which handles saving + restart
     if (this.mediaRecorder && this.mediaRecorder.state !== 'inactive') {

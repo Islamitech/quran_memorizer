@@ -126,14 +126,6 @@
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
         </button>
 
-        <!-- Tasmie active glowing indicator -->
-        <div id="tasmie-indicator" class="tasmie-indicator-container" style="display: none;">
-          <div class="pulse-circle">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"></path><path d="M19 10v1a7 7 0 0 1-14 0v-1"></path><line x1="12" x2="12" y1="19" y2="22"></line></svg>
-          </div>
-          <div class="pulse-text">جاري الاستماع لتلاوتك...</div>
-        </div>
-
         <div class="ayah-wrapper">
           <div id="focused-ayah-title" style="display:none; text-align: center; font-family: var(--font-ui); font-size: 1.1rem; color: var(--text-secondary); margin-bottom: 20px; font-weight: 500; letter-spacing: 0.5px;"></div>
           <div id="basmalah-container" class="basmalah-container" style="display:none;">بِسْمِ ٱللَّهِ ٱلرَّحْمَٰنِ ٱلرَّحِيمِ</div>
@@ -143,12 +135,20 @@
         </div>
       </section>
 
-      <!-- Eye Toggle Button (Clean & Floating below the card) -->
-      <div class="test-mode-toggle-container" style="text-align: center; margin: 5px auto 12px auto; display: flex; justify-content: center; align-items: center;">
-        <button id="btn-toggle-text-minimal" class="circular-toggle-btn" title="إخفاء النص للتسميع الغيبي">
+      <!-- Sub-Card Row: Eye Toggle Button (left) and Tasmie active glowing indicator (right) -->
+      <div class="test-mode-toggle-container" style="display: flex; justify-content: space-between; align-items: center; width: 100%; max-width: 600px; margin: 8px auto 16px auto; padding: 0 16px; box-sizing: border-box;">
+        <button id="btn-toggle-text-minimal" class="circular-toggle-btn" title="إخفاء النص للتسميع الغيبي" style="margin: 0;">
           <svg id="eye-icon-open" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
           <svg id="eye-icon-closed" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display: none;"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path><line x1="1" y1="1" x2="23" y2="23"></line></svg>
         </button>
+
+        <!-- Tasmie active glowing indicator (placed cleanly here on the right, horizontal layout) -->
+        <div id="tasmie-indicator" class="tasmie-indicator-container" style="display: none; flex-direction: row; align-items: center; gap: 8px; position: static; transform: none; margin: 0; pointer-events: none;">
+          <div class="pulse-circle" style="width: 32px; height: 32px;">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"></path><path d="M19 10v1a7 7 0 0 1-14 0v-1"></path><line x1="12" x2="12" y1="19" y2="22"></line></svg>
+          </div>
+          <div class="pulse-text" style="margin: 0; font-size: 0.85rem;">جاري الاستماع لتلاوتك...</div>
+        </div>
       </div>
       
       <!-- Speech Result -->
