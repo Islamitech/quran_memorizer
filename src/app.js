@@ -972,7 +972,19 @@ const initApp = async () => {
                           AppState.settings.hideTextMode && 
                           !ui.quranDisplay.classList.contains('reveal-words') &&
                           !isRecitationTransitioning;
-    indicator.style.display = showIndicator ? 'flex' : 'none';
+    if (showIndicator) {
+      const pulseText = indicator.querySelector('.pulse-text');
+      if (pulseText) {
+        if (!speechEngine.isSupported) {
+          pulseText.textContent = 'جاري تسجيل صوتك (وضع ذاتي)...';
+        } else {
+          pulseText.textContent = 'جاري الاستماع لتلاوتك...';
+        }
+      }
+      indicator.style.display = 'flex';
+    } else {
+      indicator.style.display = 'none';
+    }
   }
 
   ui.micBtn.addEventListener('click', () => {
@@ -1281,11 +1293,22 @@ const initApp = async () => {
       markAyahAsUnmastered(surahId, ayahId);
     }
     
-    // Only show save confirmation if no active feedback is being displayed (e.g. from speechresult handler)
-    if (!ui.speechResult.classList.contains('show')) {
+    if (!speechEngine.isSupported) {
+      ui.speechResult.innerHTML = '✅ <strong>تم تسجيل تلاوتك بنجاح!</strong> اضغط على زر التشغيل الأزرق للاستماع لصوتك وتقييم حفظك ذاتياً، أو إرسالها لمعلمك.';
+      ui.speechResult.classList.add('show');
+      setTimeout(() => {
+        if (ui.speechResult.innerHTML.includes('تم تسجيل تلاوتك بنجاح')) {
+          ui.speechResult.classList.remove('show');
+        }
+      }, 5000);
+    } else if (!ui.speechResult.classList.contains('show')) {
       ui.speechResult.textContent = 'تم تسجيل تلاوتك وحفظها وإرسالها للمعلم تلقائياً! ✔️';
       ui.speechResult.classList.add('show');
-      setTimeout(() => ui.speechResult.classList.remove('show'), 3500);
+      setTimeout(() => {
+        if (ui.speechResult.textContent.includes('تم تسجيل تلاوتك وحفظها')) {
+          ui.speechResult.classList.remove('show');
+        }
+      }, 3500);
     }
 
     // Convert Blob to Base64 and automatically add/replace report for teacher
