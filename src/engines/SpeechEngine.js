@@ -35,6 +35,8 @@ export class SpeechEngine {
     this.currentRecordingAyah = null;
     this.currentRecordingText = '';
     this.currentRecordingScore = 0;
+    this.correctRecordingStartIndex = null;
+    this.resultStartTimes = {};
     this.init();
   }
   
@@ -106,6 +108,8 @@ export class SpeechEngine {
       // Clear old speech recognition state before starting
       AppState.speech.detectedText = '';
       AppState.speech.latestScore = 0;
+      this.correctRecordingStartIndex = null;
+      this.resultStartTimes = {};
       
       // Capture which surah/ayah we are recording for
       this.currentRecordingSurah = AppState.current.surah.id;
@@ -169,12 +173,36 @@ export class SpeechEngine {
       this.audioChunks = [];
       
       this.mediaRecorder.ondataavailable = e => {
-        if(e.data.size > 0) this.audioChunks.push(e.data);
+        if (e.data.size > 0) {
+          this.audioChunks.push({
+            data: e.data,
+            timestamp: Date.now()
+          });
+        }
       };
       
       this.mediaRecorder.onstop = () => {
         const mimeType = this.mediaRecorder.mimeType || 'audio/webm';
-        const audioBlob = new Blob(this.audioChunks, { type: mimeType });
+        
+        let chunksToSave = this.audioChunks;
+        
+        // Dynamic trimming: only keep chunks from the start of the correct recitation (with 1.5s padding)
+        if (this.isSupported && this.correctRecordingStartIndex !== null) {
+          const startTime = this.resultStartTimes[this.correctRecordingStartIndex];
+          if (startTime) {
+            const safetyMargin = 1500; // 1.5 seconds safety margin to not cut the first word
+            const trimThreshold = startTime - safetyMargin;
+            chunksToSave = this.audioChunks.filter(chunk => chunk.timestamp >= trimThreshold);
+          }
+        }
+        
+        // If nothing was kept (safety fallback), use all chunks
+        if (chunksToSave.length === 0) {
+          chunksToSave = this.audioChunks;
+        }
+        
+        const rawChunks = chunksToSave.map(c => c.data);
+        const audioBlob = new Blob(rawChunks, { type: mimeType });
         const recordedSurah = this.currentRecordingSurah;
         const recordedAyah = this.currentRecordingAyah;
         const recordedText = this.currentRecordingText;
@@ -222,7 +250,7 @@ export class SpeechEngine {
         }
       };
       
-      this.mediaRecorder.start();
+      this.mediaRecorder.start(250); // Fire ondataavailable every 250ms to enable precise trimming
     } catch(e) {
       console.error(e);
       this.isRecording = false;
@@ -295,6 +323,13 @@ export class SpeechEngine {
     // Ignore results if we're in the process of stopping
     if (this.isStopping) return;
     
+    // 1. Track start times of each result index
+    for (let i = event.resultIndex; i < event.results.length; ++i) {
+      if (!this.resultStartTimes[i]) {
+        this.resultStartTimes[i] = Date.now();
+      }
+    }
+    
     let finalTranscript = '';
     let interimTranscript = '';
     let latestConfidence = 0;
@@ -313,6 +348,24 @@ export class SpeechEngine {
     
     AppState.speech.detectedText = text;
     AppState.speech.confidence = latestConfidence;
+    
+    // 2. Identify the earliest index k from which the transcript matches the reference text >= 78%
+    const referenceText = AppState.current.ayah.text || '';
+    if (referenceText) {
+      for (let k = 0; k < event.results.length; ++k) {
+        let transcriptFromK = '';
+        for (let j = k; j < event.results.length; ++j) {
+          transcriptFromK += event.results[j][0].transcript + ' ';
+        }
+        transcriptFromK = transcriptFromK.trim();
+        
+        const scoreFromK = this.matchAlgo.calculateMatchScore(transcriptFromK, referenceText);
+        if (scoreFromK >= 0.78) {
+          this.correctRecordingStartIndex = k;
+          break; // Earliest index that achieves correct match
+        }
+      }
+    }
     
     window.dispatchEvent(new CustomEvent('speechresult', {
       detail: { text, confidence: latestConfidence }
