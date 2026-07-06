@@ -143,23 +143,49 @@ export class SpeechEngine {
           const feedback1 = this.liveEchoCtx.createGain();
           const feedback2 = this.liveEchoCtx.createGain();
           
-          delay1.delayTime.value = 0.18;
-          delay2.delayTime.value = 0.28;
-          feedback1.gain.value = 0.18;
-          feedback2.gain.value = 0.15;
+          delay1.delayTime.value = 0.22; // Mosque size delay 1
+          delay2.delayTime.value = 0.38; // Mosque size delay 2
+          feedback1.gain.value = 0.32; // Reverb tail 1
+          feedback2.gain.value = 0.22; // Reverb tail 2
           dryNode.gain.value = 1.0;
-          wetNode.gain.value = 0.18;
+          wetNode.gain.value = 0.28; // Beautiful mosque reverb mix
           
+          // Audio enhancement filters for pristine voice quality
+          const hpFilter = this.liveEchoCtx.createBiquadFilter();
+          hpFilter.type = 'highpass';
+          hpFilter.frequency.value = 110; // Filter low rumble
+          hpFilter.Q.value = 0.707;
+          
+          const presenceBoost = this.liveEchoCtx.createBiquadFilter();
+          presenceBoost.type = 'peaking';
+          presenceBoost.frequency.value = 3000; // Boost voice presence
+          presenceBoost.Q.value = 1.0;
+          presenceBoost.gain.value = 5.0; // 5dB clarity boost
+          
+          const lpFilter = this.liveEchoCtx.createBiquadFilter();
+          lpFilter.type = 'lowpass';
+          lpFilter.frequency.value = 8500; // Filter high hiss
+          
+          // Connect stream to voice filters pipeline
+          this.liveEchoSource.connect(hpFilter);
+          hpFilter.connect(presenceBoost);
+          presenceBoost.connect(lpFilter);
+          
+          // Connect filtered output to dry output (direct speaker)
+          lpFilter.connect(dryNode);
+          dryNode.connect(this.liveEchoCtx.destination);
+          
+          // Connect delay loops
           delay1.connect(feedback1);
           feedback1.connect(delay1);
           delay2.connect(feedback2);
           feedback2.connect(delay2);
           
-          this.liveEchoSource.connect(dryNode);
-          dryNode.connect(this.liveEchoCtx.destination);
+          // Route filtered voice into delays
+          lpFilter.connect(delay1);
+          lpFilter.connect(delay2);
           
-          this.liveEchoSource.connect(delay1);
-          this.liveEchoSource.connect(delay2);
+          // Route delays to wet output
           delay1.connect(wetNode);
           delay2.connect(wetNode);
           wetNode.connect(this.liveEchoCtx.destination);
