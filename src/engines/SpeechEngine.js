@@ -85,6 +85,10 @@ export class SpeechEngine {
       this.isStopping = false;
       AppState.speech.isListening = true;
       
+      // Clear old speech recognition state before starting
+      AppState.speech.detectedText = '';
+      AppState.speech.latestScore = 0;
+      
       // Capture which surah/ayah we are recording for
       this.currentRecordingSurah = AppState.current.surah.id;
       this.currentRecordingAyah = AppState.current.ayah.id;
