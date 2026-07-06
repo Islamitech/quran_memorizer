@@ -129,9 +129,21 @@ export class SpeechEngine {
       
       
       
+      // Determine best supported mime type for high-quality audio recording
+      const options = {};
+      if (typeof MediaRecorder.isTypeSupported === 'function') {
+        if (MediaRecorder.isTypeSupported('audio/webm;codecs=opus')) {
+          options.mimeType = 'audio/webm;codecs=opus';
+        } else if (MediaRecorder.isTypeSupported('audio/mp4')) {
+          options.mimeType = 'audio/mp4';
+        }
+      }
+      options.audioBitsPerSecond = 128000; // 128 kbps high quality audio
+      
       // Create new MediaRecorder using the raw microphone stream to prevent iOS Safari crashes
-      this.mediaRecorder = new MediaRecorder(this.activeStream);
+      this.mediaRecorder = new MediaRecorder(this.activeStream, options);
       this.audioChunks = [];
+      this.recordingStartTime = Date.now();
       
       this.mediaRecorder.ondataavailable = e => {
         if (e.data.size > 0) {
@@ -172,6 +184,15 @@ export class SpeechEngine {
         // Safety: abort recognition again to ensure no dangling recognition
         try { this.recognition.abort(); } catch(e) {}
         
+        // Calculate accurate duration of the saved audio segments
+        let duration = 0;
+        if (chunksToSave.length > 1) {
+          duration = (chunksToSave[chunksToSave.length - 1].timestamp - chunksToSave[0].timestamp) / 1000;
+        } else {
+          duration = (Date.now() - this.recordingStartTime) / 1000;
+        }
+        duration = Math.max(duration, 1.0);
+        
         // Only save if we actually captured audio data
         if (audioBlob.size > 0) {
           DbManager.saveAudioRecording(recordedSurah, recordedAyah, audioBlob)
@@ -182,7 +203,8 @@ export class SpeechEngine {
                   surahId: recordedSurah,
                   ayahId: recordedAyah,
                   detectedText: recordedText,
-                  score: recordedScore
+                  score: recordedScore,
+                  duration: duration
                 }
               }));
             })
