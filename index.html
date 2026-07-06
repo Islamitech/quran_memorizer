@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <script>
     // Force cache refresh when app version changes to ensure latest updates are loaded
-    const CURRENT_VERSION = 'v97';
+    const CURRENT_VERSION = 'v98';
     if (localStorage.getItem('app_cache_ver') !== CURRENT_VERSION) {
       if ('serviceWorker' in navigator) {
         navigator.serviceWorker.getRegistrations().then(regs => {
@@ -528,6 +528,6 @@
     </div>
   </div>
 
-  <script type="module" src="./src/app.js?v=97"></script>
+  <script type="module" src="./src/app.js?v=98"></script>
 </body>
 </html>
