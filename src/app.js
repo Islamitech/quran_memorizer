@@ -8,7 +8,7 @@ import { InteractiveTour } from './components/InteractiveTour.js';
 import { DbManager } from './utils/DbManager.js';
 
 // Force update if app version has changed (handles aggressive PWA caching)
-const CURRENT_APP_VERSION = 'v94';
+const CURRENT_APP_VERSION = 'v95';
 if (localStorage.getItem('app_cache_ver') !== CURRENT_APP_VERSION) {
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.getRegistrations().then(regs => {
@@ -1298,7 +1298,7 @@ const initApp = async () => {
   });
 
   window.addEventListener('recordingready', (e) => {
-    const { blob, surahId, ayahId, detectedText, score } = e.detail;
+    const { blob, surahId, ayahId, detectedText, score, duration } = e.detail;
     
     // Update play button only if the recording belongs to the currently displayed Ayah
     if (AppState.current.surah.id === surahId && AppState.current.ayah.id === ayahId) {
@@ -1444,7 +1444,8 @@ const initApp = async () => {
         ayahNumber: ayahId,
         text: detectedText || ayahText || 'تم تسجيل الصوت لتسميعه للمعلم',
         score: score || 0,
-        audioBase64: audioBase64
+        audioBase64: audioBase64,
+        duration: duration || 0
       };
       
       // Filter out existing report for same ayah in same surah (replacing old recording)
@@ -1761,6 +1762,14 @@ const initApp = async () => {
       const audioHtml = audioSrc ? `<div class="report-audio"><audio src="${audioSrc}" controls></audio></div>` : '<p>لا يوجد تسجيل صوتي.</p>';
       const extension = mimeType.includes('mp4') ? 'mp4' : 'webm';
       
+      const formatTime = (secs) => {
+        const m = Math.floor(secs / 60);
+        const s = Math.floor(secs % 60);
+        return `${m}:${s < 10 ? '0' : ''}${s}`;
+      };
+      
+      const durationStr = report.duration ? ` | مدة التسجيل: ${formatTime(report.duration)}` : '';
+      
       card.innerHTML = `
         <div class="report-header">
           <span>${report.surahName} - آية ${report.ayahNumber}</span>
@@ -1769,7 +1778,7 @@ const initApp = async () => {
         <div class="report-text" style="color: var(--text-secondary); font-style: italic;">"${report.text}"</div>
         ${audioHtml}
         <div style="font-size: 0.8rem; color: var(--text-secondary); margin-top: 4px;">
-          التاريخ: ${new Date(report.timestamp).toLocaleString()}
+          التاريخ: ${new Date(report.timestamp).toLocaleString()}${durationStr}
         </div>
         <div class="report-actions">
           <a href="${audioSrc || '#'}" download="سورة_${report.surahName}_آية_${report.ayahNumber}.${extension}" class="report-action-btn download-btn" title="تنزيل التسجيل">
