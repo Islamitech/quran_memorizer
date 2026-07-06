@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <script>
     // Force cache refresh when app version changes to ensure latest updates are loaded
-    const CURRENT_VERSION = 'v96';
+    const CURRENT_VERSION = 'v97';
     if (localStorage.getItem('app_cache_ver') !== CURRENT_VERSION) {
       if ('serviceWorker' in navigator) {
         navigator.serviceWorker.getRegistrations().then(regs => {
@@ -74,7 +74,7 @@
     <!-- Header -->
     <header class="app-header">
       <div class="logo">
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="logo-icon"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20"></path></svg>
+        <img src="./quran_logo.jpg" alt="شعار محفّظ" class="logo-img" style="height: 32px; width: 32px; border-radius: 8px; object-fit: cover; margin-left: 8px; box-shadow: 0 2px 6px rgba(14, 165, 233, 0.25);">
         <h1>محفّظ</h1>
       </div>
       <div class="header-controls">
@@ -528,6 +528,6 @@
     </div>
   </div>
 
-  <script type="module" src="./src/app.js?v=96"></script>
+  <script type="module" src="./src/app.js?v=97"></script>
 </body>
 </html>

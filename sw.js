@@ -1,6 +1,6 @@
 // sw.js - Service Worker المتقدم
 
-const CACHE_VERSION = 'v96';
+const CACHE_VERSION = 'v97';
 const CACHE_NAMES = {
   static: `static-${CACHE_VERSION}`,
   audio: `audio-${CACHE_VERSION}`,
@@ -18,6 +18,7 @@ const STATIC_ASSETS = [
   './icon-512.png',
   './favicon.png',
   './qrcode.png',
+  './quran_logo.jpg',
   './src/app.js',
   './src/core/State.js',
   './src/utils/StorageManager.js',
