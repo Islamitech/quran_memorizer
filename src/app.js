@@ -1101,7 +1101,8 @@ const initApp = async () => {
       AppState.speech.latestScore = score;
 
       const spokenWords = text.trim().split(/\s+/).filter(w => w.length > 0);
-      const refWords = referenceText.trim().split(/\s+/).filter(w => w.length > 0);
+      const cleanRef = speechEngine.matchAlgo.normalizer.normalize(referenceText, { removeDiacritics: true, unifyLetters: true });
+      const refWords = cleanRef.split(' ').filter(w => w.length > 0);
       const spokenWordsCount = spokenWords.length;
       const refWordsCount = refWords.length;
       
@@ -1497,7 +1498,7 @@ const initApp = async () => {
           }
         }
         ui.speechResult.classList.add('show');
-      } else {
+      } else if (!isCorrect && !text) {
         // If they finished recording, but no speech was recognized (silent or extremely low volume)
         ui.speechResult.innerHTML = '⚠️ <strong>تنبيه:</strong> لم يتم الكشف عن صوت أو تلاوة. يرجى البدء بالتسميع ومحاولة القراءة بصوت واضح.';
         ui.speechResult.classList.add('show');
@@ -1506,6 +1507,8 @@ const initApp = async () => {
             ui.speechResult.classList.remove('show');
           }
         }, 4000);
+      } else {
+        ui.speechResult.classList.remove('show');
       }
     } else {
       // Normal mode (text visible): show final score when recording stops
