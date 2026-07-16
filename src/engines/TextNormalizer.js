@@ -75,20 +75,22 @@ export class TextNormalizer {
       result = result.replace(/[\u06DD]/g, '');
     }
 
-    // فحص وتوسيع الحروف المقطعة المقروءة بناءً على الخريطة اللفظية
-    let words = result.split(' ');
-    words = words.map(word => this.muqattaahMap[word] || word);
-    result = words.join(' ');
-    
+    // Unify basic letter variations BEFORE muqattaah expansion to resolve hamza mismatch bugs
     if (options.unifyLetters !== false) {
-      // Unify all alef variants including alef wasla (ٱ U+0671)
       result = result.replace(/[أإآٱ]/g, 'ا');
       result = result.replace(/ة/g, 'ه');
       result = result.replace(/ؤ/g, 'و');
       result = result.replace(/ئ/g, 'ي');
       result = result.replace(/ى/g, 'ي');
-      
-      // Unify spelling of disconnected letter phonemes (muqatta'ah)
+    }
+
+    // فحص وتوسيع الحروف المقطعة المقروءة بناءً على الخريطة اللفظية
+    let words = result.split(' ');
+    words = words.map(word => this.muqattaahMap[word] || word);
+    result = words.join(' ');
+    
+    // Unify spelling of disconnected letter phonemes (muqatta'ah) post-expansion
+    if (options.unifyLetters !== false) {
       result = result.replace(/راء/g, 'را');
       result = result.replace(/هاء/g, 'ها');
       result = result.replace(/ياء/g, 'يا');
