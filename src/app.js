@@ -1051,8 +1051,25 @@ const initApp = async () => {
       if (AppState.player.isPlaying) AppState.player.isPlaying = false; // Stop reciter audio
       ui.btnPlayRecording.disabled = true;
       ui.btnPlayRecording.style.opacity = '0.5';
+      ui.btnPlayRecording.style.color = '';
       ui.speechResult.textContent = '';
       ui.speechResult.classList.remove('show');
+      
+      // Reset errors, error highlights, and revealed states to start test fresh
+      ayahErrorCount = 0;
+      currentRecordedBlob = null;
+      ui.quranDisplay.classList.remove('recitation-error', 'reveal-words');
+      ui.quranDisplay.querySelectorAll('.word').forEach(span => {
+        span.classList.remove('revealed');
+        if (document.body.classList.contains('theme-child')) {
+          span.style.color = '';
+        }
+      });
+      
+      // Delete old recording from IndexedDB to ensure fresh start
+      DbManager.deleteAudioRecording(AppState.current.surah.id, AppState.current.ayah.id)
+        .catch(err => console.warn("Failed to delete previous recording:", err));
+        
       speechEngine.start();
     }
   });
