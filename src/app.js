@@ -1576,7 +1576,7 @@ const initApp = async () => {
       currentPlayingSource.stop();
       currentPlayingSource = null;
       if (currentPlayingCtx) {
-        currentPlayingCtx.close();
+        try { currentPlayingCtx.close(); } catch(e) {}
         currentPlayingCtx = null;
       }
       ui.btnPlayRecording.style.color = '';
@@ -1591,16 +1591,24 @@ const initApp = async () => {
       return;
     }
 
+    // Synchronously create and unlock the HTML5 Audio element to preserve user gesture context on iOS/Safari
+    const fallbackAudio = new Audio();
+    fallbackAudio.play().catch(() => {}); // Dummy call to unlock iOS/Safari audio engine
+
     const playNaturally = () => {
+      console.log("Using HTML5 Audio playback for recorded ayah");
       const url = URL.createObjectURL(currentRecordedBlob);
-      currentPlayingRecording = new Audio(url);
+      fallbackAudio.src = url;
+      currentPlayingRecording = fallbackAudio;
       ui.btnPlayRecording.style.color = 'var(--accent-primary)';
       
-      currentPlayingRecording.play().catch(err => {
+      fallbackAudio.play().catch(err => {
         console.error("Playback failed", err);
+        ui.btnPlayRecording.style.color = '';
+        currentPlayingRecording = null;
       });
 
-      currentPlayingRecording.onended = () => {
+      fallbackAudio.onended = () => {
         ui.btnPlayRecording.style.color = '';
         currentPlayingRecording = null;
       };
@@ -1608,98 +1616,131 @@ const initApp = async () => {
 
     // Playback with Web Audio API for noise filtering and optional mosque echo
     const AudioContextClass = window.AudioContext || window.webkitAudioContext;
-    currentPlayingCtx = new AudioContextClass();
-    if (currentPlayingCtx.state === 'suspended') {
-      try { await currentPlayingCtx.resume(); } catch(e) {}
+    if (!AudioContextClass) {
+      playNaturally();
+      return;
+    }
+
+    let ctx;
+    try {
+      ctx = new AudioContextClass();
+      if (ctx.state === 'suspended') {
+        await ctx.resume().catch(() => {});
+      }
+    } catch (e) {
+      console.warn("Could not create AudioContext, falling back to natural play:", e);
+      playNaturally();
+      return;
     }
     
+    currentPlayingCtx = ctx;
+
     const reader = new FileReader();
     reader.onload = async function() {
       try {
         if (!currentPlayingCtx) return;
-        const buffer = await currentPlayingCtx.decodeAudioData(reader.result);
-        currentPlayingSource = currentPlayingCtx.createBufferSource();
-        currentPlayingSource.buffer = buffer;
         
-        // 1. Highpass filter to remove low-frequency microphone rumble/hum
-        const hpFilter = currentPlayingCtx.createBiquadFilter();
-        hpFilter.type = 'highpass';
-        hpFilter.frequency.value = 110; // Hz
-        hpFilter.Q.value = 0.707;
-        
-        // 2. Peaking filter to boost vocal clarity (presence range around 3kHz)
-        const presenceBoost = currentPlayingCtx.createBiquadFilter();
-        presenceBoost.type = 'peaking';
-        presenceBoost.frequency.value = 3000; // Hz
-        presenceBoost.Q.value = 1.0;
-        presenceBoost.gain.value = 5.0; // dB boost for clarity
-        
-        // 3. Lowpass filter to cut out high-frequency hiss/noise
-        const lpFilter = currentPlayingCtx.createBiquadFilter();
-        lpFilter.type = 'lowpass';
-        lpFilter.frequency.value = 8500; // Hz
-        
-        // Connect source to vocal filters pipeline
-        currentPlayingSource.connect(hpFilter);
-        hpFilter.connect(presenceBoost);
-        presenceBoost.connect(lpFilter);
-        
-        // Create gain nodes for wet/dry mix
-        const dryGain = currentPlayingCtx.createGain();
-        dryGain.gain.value = 1.0; // Keep original voice loud and clear
-        
-        // Connect clean filtered voice to destination
-        lpFilter.connect(dryGain);
-        dryGain.connect(currentPlayingCtx.destination);
-        
-        // Apply Mosque Echo if enabled at time of recording
-        if (currentRecordedEchoEnabled) {
-          const wetGain = currentPlayingCtx.createGain();
-          wetGain.gain.value = 0.28; // Elegant mosque echo mix
-          
-          const delay1 = currentPlayingCtx.createDelay(1.0);
-          const delay2 = currentPlayingCtx.createDelay(1.0);
-          const feedback1 = currentPlayingCtx.createGain();
-          const feedback2 = currentPlayingCtx.createGain();
-          
-          delay1.delayTime.value = 0.22; // Mosque size delay 1
-          delay2.delayTime.value = 0.38; // Mosque size delay 2
-          feedback1.gain.value = 0.32; // Tail feedback 1
-          feedback2.gain.value = 0.22; // Tail feedback 2
-          
-          // Connect Delay 1 loop
-          delay1.connect(feedback1);
-          feedback1.connect(delay1);
-          
-          // Connect Delay 2 loop
-          delay2.connect(feedback2);
-          feedback2.connect(delay2);
-          
-          // Route filtered voice into delays
-          lpFilter.connect(delay1);
-          lpFilter.connect(delay2);
-          
-          // Route delays to wetGain
-          delay1.connect(wetGain);
-          delay2.connect(wetGain);
-          
-          // Route wetGain to destination (speakers)
-          wetGain.connect(currentPlayingCtx.destination);
-        }
-        
-        currentPlayingSource.start(0);
-        ui.btnPlayRecording.style.color = 'var(--accent-primary)';
-        
-        currentPlayingSource.onended = () => {
-          ui.btnPlayRecording.style.color = '';
-          currentPlayingSource = null;
+        ctx.decodeAudioData(reader.result, (buffer) => {
+          try {
+            if (!currentPlayingCtx) return;
+            currentPlayingSource = currentPlayingCtx.createBufferSource();
+            currentPlayingSource.buffer = buffer;
+            
+            // 1. Highpass filter to remove low-frequency microphone rumble/hum
+            const hpFilter = currentPlayingCtx.createBiquadFilter();
+            hpFilter.type = 'highpass';
+            hpFilter.frequency.value = 110; // Hz
+            hpFilter.Q.value = 0.707;
+            
+            // 2. Peaking filter to boost vocal clarity (presence range around 3kHz)
+            const presenceBoost = currentPlayingCtx.createBiquadFilter();
+            presenceBoost.type = 'peaking';
+            presenceBoost.frequency.value = 3000; // Hz
+            presenceBoost.Q.value = 1.0;
+            presenceBoost.gain.value = 5.0; // dB boost for clarity
+            
+            // 3. Lowpass filter to cut out high-frequency hiss/noise
+            const lpFilter = currentPlayingCtx.createBiquadFilter();
+            lpFilter.type = 'lowpass';
+            lpFilter.frequency.value = 8500; // Hz
+            
+            // Connect source to vocal filters pipeline
+            currentPlayingSource.connect(hpFilter);
+            hpFilter.connect(presenceBoost);
+            presenceBoost.connect(lpFilter);
+            
+            // Create gain nodes for wet/dry mix
+            const dryGain = currentPlayingCtx.createGain();
+            dryGain.gain.value = 1.0; // Keep original voice loud and clear
+            
+            // Connect clean filtered voice to destination
+            lpFilter.connect(dryGain);
+            dryGain.connect(currentPlayingCtx.destination);
+            
+            // Apply Mosque Echo if enabled at time of recording
+            if (currentRecordedEchoEnabled) {
+              const wetGain = currentPlayingCtx.createGain();
+              wetGain.gain.value = 0.28; // Elegant mosque echo mix
+              
+              const delay1 = currentPlayingCtx.createDelay(1.0);
+              const delay2 = currentPlayingCtx.createDelay(1.0);
+              const feedback1 = currentPlayingCtx.createGain();
+              const feedback2 = currentPlayingCtx.createGain();
+              
+              delay1.delayTime.value = 0.22; // Mosque size delay 1
+              delay2.delayTime.value = 0.38; // Mosque size delay 2
+              feedback1.gain.value = 0.32; // Tail feedback 1
+              feedback2.gain.value = 0.22; // Tail feedback 2
+              
+              // Connect Delay 1 loop
+              delay1.connect(feedback1);
+              feedback1.connect(delay1);
+              
+              // Connect Delay 2 loop
+              delay2.connect(feedback2);
+              feedback2.connect(delay2);
+              
+              // Route filtered voice into delays
+              lpFilter.connect(delay1);
+              lpFilter.connect(delay2);
+              
+              // Route delays to wetGain
+              delay1.connect(wetGain);
+              delay2.connect(wetGain);
+              
+              // Route wetGain to destination (speakers)
+              wetGain.connect(currentPlayingCtx.destination);
+            }
+            
+            currentPlayingSource.start(0);
+            ui.btnPlayRecording.style.color = 'var(--accent-primary)';
+            
+            currentPlayingSource.onended = () => {
+              ui.btnPlayRecording.style.color = '';
+              currentPlayingSource = null;
+              if (currentPlayingCtx) {
+                try { currentPlayingCtx.close(); } catch(e) {}
+                currentPlayingCtx = null;
+              }
+            };
+          } catch(e) {
+            console.error("Web Audio playback setup error, calling fallback:", e);
+            if (currentPlayingCtx) {
+              try { currentPlayingCtx.close(); } catch(e) {}
+              currentPlayingCtx = null;
+            }
+            playNaturally();
+          }
+        }, (decodeErr) => {
+          console.warn("decodeAudioData failed, calling fallback:", decodeErr);
           if (currentPlayingCtx) {
-            currentPlayingCtx.close();
+            try { currentPlayingCtx.close(); } catch(e) {}
             currentPlayingCtx = null;
           }
-        };
+          playNaturally();
+        });
       } catch (err) {
-        console.error("Web Audio playback failed, falling back to natural audio play:", err);
+        console.error("FileReader onload error, calling fallback:", err);
         if (currentPlayingCtx) {
           try { currentPlayingCtx.close(); } catch(e) {}
           currentPlayingCtx = null;
@@ -1832,6 +1873,9 @@ const initApp = async () => {
 
   async function stopActiveReportPlayer() {
     if (activeReportPlayer) {
+      if (activeReportPlayer.audioEl) {
+        try { activeReportPlayer.audioEl.pause(); } catch(e) {}
+      }
       if (activeReportPlayer.source) {
         try { activeReportPlayer.source.stop(); } catch(e) {}
       }
@@ -1858,6 +1902,17 @@ const initApp = async () => {
     }
   }
 
+  function base64ToArrayBuffer(base64) {
+    const base64Clean = base64.replace(/^data:audio\/[a-zA-Z0-9\-+.]+;base64,/, '');
+    const binaryString = atob(base64Clean);
+    const len = binaryString.length;
+    const bytes = new Uint8Array(len);
+    for (let i = 0; i < len; i++) {
+      bytes[i] = binaryString.charCodeAt(i);
+    }
+    return bytes.buffer;
+  }
+
   async function playReportAudio(reportId) {
     if (activeReportPlayer && activeReportPlayer.id === reportId) {
       await stopActiveReportPlayer();
@@ -1870,7 +1925,7 @@ const initApp = async () => {
       currentPlayingSource.stop();
       currentPlayingSource = null;
       if (currentPlayingCtx) {
-        currentPlayingCtx.close();
+        try { currentPlayingCtx.close(); } catch(e) {}
         currentPlayingCtx = null;
       }
       ui.btnPlayRecording.style.color = '';
@@ -1896,125 +1951,184 @@ const initApp = async () => {
     
     if (playIcon) playIcon.style.display = 'none';
     if (pauseIcon) pauseIcon.style.display = 'block';
-    
-    const AudioContextClass = window.AudioContext || window.webkitAudioContext;
-    const ctx = new AudioContextClass();
-    if (ctx.state === 'suspended') {
-      try { await ctx.resume(); } catch(e) {}
-    }
-    
-    const mimeMatch = report.audioBase64.match(/^data:(audio\/[a-zA-Z0-9\-+.]+);base64,/);
-    const mimeType = mimeMatch ? mimeMatch[1] : 'audio/webm';
-    const blob = base64ToBlob(report.audioBase64, mimeType);
-    
-    const reader = new FileReader();
-    reader.onload = async function() {
-      try {
-        if (!ctx || ctx.state === 'closed') return;
-        const buffer = await ctx.decodeAudioData(reader.result);
-        const source = ctx.createBufferSource();
-        source.buffer = buffer;
-        
-        // 1. Highpass filter to remove low-frequency microphone rumble/hum
-        const hpFilter = ctx.createBiquadFilter();
-        hpFilter.type = 'highpass';
-        hpFilter.frequency.value = 110; // Hz
-        hpFilter.Q.value = 0.707;
-        
-        // 2. Peaking filter to boost vocal clarity
-        const presenceBoost = ctx.createBiquadFilter();
-        presenceBoost.type = 'peaking';
-        presenceBoost.frequency.value = 3000;
-        presenceBoost.Q.value = 1.0;
-        presenceBoost.gain.value = 5.0; // 5dB boost
-        
-        // 3. Lowpass filter
-        const lpFilter = ctx.createBiquadFilter();
-        lpFilter.type = 'lowpass';
-        lpFilter.frequency.value = 8500;
-        
-        source.connect(hpFilter);
-        hpFilter.connect(presenceBoost);
-        presenceBoost.connect(lpFilter);
-        
-        const dryGain = ctx.createGain();
-        dryGain.gain.value = 1.0;
-        lpFilter.connect(dryGain);
-        dryGain.connect(ctx.destination);
-        
-        // Mosque Echo if enabled when recorded
-        if (report.echoEnabled) {
-          const wetGain = ctx.createGain();
-          wetGain.gain.value = 0.28;
-          
-          const delay1 = ctx.createDelay(1.0);
-          const delay2 = ctx.createDelay(1.0);
-          const feedback1 = ctx.createGain();
-          const feedback2 = ctx.createGain();
-          
-          delay1.delayTime.value = 0.22;
-          delay2.delayTime.value = 0.38;
-          feedback1.gain.value = 0.32;
-          feedback2.gain.value = 0.22;
-          
-          delay1.connect(feedback1);
-          feedback1.connect(delay1);
-          delay2.connect(feedback2);
-          feedback2.connect(delay2);
-          
-          lpFilter.connect(delay1);
-          lpFilter.connect(delay2);
-          
-          delay1.connect(wetGain);
-          delay2.connect(wetGain);
-          
-          wetGain.connect(ctx.destination);
-        }
-        
-        const startTime = ctx.currentTime;
-        const duration = buffer.duration;
-        
-        source.start(0);
-        
-        const timer = setInterval(() => {
-          if (ctx.state === 'closed') return;
-          const elapsed = ctx.currentTime - startTime;
-          if (elapsed >= duration) {
-            stopActiveReportPlayer();
-          } else {
-            const percent = (elapsed / duration) * 100;
-            if (slider) slider.value = percent;
-            
-            const formatTime = (secs) => {
-              const m = Math.floor(secs / 60);
-              const s = Math.floor(secs % 60);
-              return `${m}:${s < 10 ? '0' : ''}${s}`;
-            };
-            if (currTimeText) currTimeText.textContent = formatTime(elapsed);
-          }
-        }, 100);
-        
-        activeReportPlayer = {
-          id: reportId,
-          source: source,
-          ctx: ctx,
-          startTime: startTime,
-          duration: duration,
-          timer: timer
-        };
-        
-        source.onended = () => {
-          if (activeReportPlayer && activeReportPlayer.id === reportId) {
-            stopActiveReportPlayer();
-          }
-        };
-      } catch(e) {
-        console.error("Decoder error", e);
+
+    // Synchronously create and unlock the HTML5 Audio element to preserve user gesture context on iOS/Safari
+    const fallbackAudio = new Audio();
+    fallbackAudio.play().catch(() => {}); // Dummy call to unlock iOS/Safari audio engine
+
+    const startFallbackPlayer = () => {
+      console.log("Using HTML5 Audio playback fallback for report:", reportId);
+      fallbackAudio.src = report.audioBase64;
+      fallbackAudio.play().catch(e => {
+        console.error("HTML5 Audio fallback play failed:", e);
         if (playIcon) playIcon.style.display = 'block';
         if (pauseIcon) pauseIcon.style.display = 'none';
-      }
+      });
+      
+      fallbackAudio.onended = () => {
+        if (activeReportPlayer && activeReportPlayer.id === reportId) {
+          stopActiveReportPlayer();
+        }
+      };
+      
+      const startTime = Date.now();
+      const duration = report.duration || 5;
+      const timer = setInterval(() => {
+        const elapsed = (Date.now() - startTime) / 1000;
+        if (elapsed >= duration) {
+          stopActiveReportPlayer();
+        } else {
+          const percent = (elapsed / duration) * 100;
+          if (slider) slider.value = percent;
+          const formatTime = (secs) => {
+            const m = Math.floor(secs / 60);
+            const s = Math.floor(secs % 60);
+            return `${m}:${s < 10 ? '0' : ''}${s}`;
+          };
+          if (currTimeText) currTimeText.textContent = formatTime(elapsed);
+        }
+      }, 100);
+      
+      activeReportPlayer = {
+        id: reportId,
+        audioEl: fallbackAudio,
+        ctx: null,
+        timer: timer
+      };
     };
-    reader.readAsArrayBuffer(blob);
+
+    // Playback with Web Audio API for noise filtering and optional mosque echo
+    const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+    if (!AudioContextClass) {
+      startFallbackPlayer();
+      return;
+    }
+
+    let ctx;
+    try {
+      ctx = new AudioContextClass();
+      if (ctx.state === 'suspended') {
+        await ctx.resume().catch(() => {});
+      }
+    } catch (e) {
+      console.warn("Could not create AudioContext, falling back to natural play:", e);
+      startFallbackPlayer();
+      return;
+    }
+
+    try {
+      const arrayBuffer = base64ToArrayBuffer(report.audioBase64);
+      ctx.decodeAudioData(arrayBuffer, (buffer) => {
+        try {
+          if (ctx.state === 'closed') return;
+          const source = ctx.createBufferSource();
+          source.buffer = buffer;
+          
+          // 1. Highpass filter to remove low-frequency microphone rumble/hum
+          const hpFilter = ctx.createBiquadFilter();
+          hpFilter.type = 'highpass';
+          hpFilter.frequency.value = 110; // Hz
+          hpFilter.Q.value = 0.707;
+          
+          // 2. Peaking filter to boost vocal clarity
+          const presenceBoost = ctx.createBiquadFilter();
+          presenceBoost.type = 'peaking';
+          presenceBoost.frequency.value = 3000;
+          presenceBoost.Q.value = 1.0;
+          presenceBoost.gain.value = 5.0; // 5dB boost
+          
+          // 3. Lowpass filter
+          const lpFilter = ctx.createBiquadFilter();
+          lpFilter.type = 'lowpass';
+          lpFilter.frequency.value = 8500;
+          
+          source.connect(hpFilter);
+          hpFilter.connect(presenceBoost);
+          presenceBoost.connect(lpFilter);
+          
+          const dryGain = ctx.createGain();
+          dryGain.gain.value = 1.0;
+          lpFilter.connect(dryGain);
+          dryGain.connect(ctx.destination);
+          
+          // Mosque Echo if enabled when recorded
+          if (report.echoEnabled) {
+            const wetGain = ctx.createGain();
+            wetGain.gain.value = 0.28;
+            
+            const delay1 = ctx.createDelay(1.0);
+            const delay2 = ctx.createDelay(1.0);
+            const feedback1 = ctx.createGain();
+            const feedback2 = ctx.createGain();
+            
+            delay1.delayTime.value = 0.22;
+            delay2.delayTime.value = 0.38;
+            feedback1.gain.value = 0.32;
+            feedback2.gain.value = 0.22;
+            
+            delay1.connect(feedback1);
+            feedback1.connect(delay1);
+            delay2.connect(feedback2);
+            feedback2.connect(delay2);
+            
+            lpFilter.connect(delay1);
+            lpFilter.connect(delay2);
+            
+            delay1.connect(wetGain);
+            delay2.connect(wetGain);
+            
+            wetGain.connect(ctx.destination);
+          }
+          
+          const startTime = ctx.currentTime;
+          const duration = buffer.duration;
+          
+          source.start(0);
+          
+          const timer = setInterval(() => {
+            if (ctx.state === 'closed') return;
+            const elapsed = ctx.currentTime - startTime;
+            if (elapsed >= duration) {
+              stopActiveReportPlayer();
+            } else {
+              const percent = (elapsed / duration) * 100;
+              if (slider) slider.value = percent;
+              
+              const formatTime = (secs) => {
+                const m = Math.floor(secs / 60);
+                const s = Math.floor(secs % 60);
+                return `${m}:${s < 10 ? '0' : ''}${s}`;
+              };
+              if (currTimeText) currTimeText.textContent = formatTime(elapsed);
+            }
+          }, 100);
+          
+          activeReportPlayer = {
+            id: reportId,
+            source: source,
+            ctx: ctx,
+            startTime: startTime,
+            duration: duration,
+            timer: timer
+          };
+          
+          source.onended = () => {
+            if (activeReportPlayer && activeReportPlayer.id === reportId) {
+              stopActiveReportPlayer();
+            }
+          };
+        } catch(e) {
+          console.error("Error setting up audio nodes:", e);
+          startFallbackPlayer();
+        }
+      }, (decodeErr) => {
+        console.warn("decodeAudioData failed, calling fallback:", decodeErr);
+        startFallbackPlayer();
+      });
+    } catch(e) {
+      console.error("Base64 array buffer conversion or decode error:", e);
+      startFallbackPlayer();
+    }
   }
 
   function renderTeacherReports() {
