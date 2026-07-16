@@ -7,17 +7,9 @@ export class SpeechEngine {
     this.recognition = null;
     this.mediaRecorder = null;
     this.audioChunks = [];
-    // Detect iOS standalone PWA mode (where Apple disabled Web Speech API)
-    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || 
-                  (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
-    const isStandalone = window.navigator.standalone === true || 
-                         window.matchMedia('(display-mode: standalone)').matches;
     
-    if (isIOS && isStandalone) {
-      this.isSupported = false;
-    } else {
-      this.isSupported = 'webkitSpeechRecognition' in window || 'SpeechRecognition' in window;
-    }
+    // Enable native Web Speech API support detection (iOS 16+ standalone PWA supports it)
+    this.isSupported = 'webkitSpeechRecognition' in window || 'SpeechRecognition' in window;
     
     this.matchAlgo = new MatchAlgorithm();
     
@@ -115,6 +107,18 @@ export class SpeechEngine {
       this.currentRecordingSurah = AppState.current.surah.id;
       this.currentRecordingAyah = AppState.current.ayah.id;
       
+      const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || 
+                    (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+      
+      // On iOS, prioritize SpeechRecognition and bypass MediaRecorder to prevent mic conflict blocks
+      if (isIOS && this.isSupported) {
+        console.log("iOS detected. Prioritizing SpeechRecognition, bypassing MediaRecorder.");
+        this.mediaRecorder = null;
+        this.initRecognition();
+        this.safeStartRecognition(3);
+        return;
+      }
+      
       // 1. Get microphone stream (or reuse existing one) asynchronously first
       if (!this.activeStream || this.activeStream.getTracks().every(t => t.readyState === 'ended')) {
         this.activeStream = await navigator.mediaDevices.getUserMedia({ audio: true });
@@ -125,9 +129,6 @@ export class SpeechEngine {
         this.initRecognition();
         this.safeStartRecognition(3);
       }
-      
-      
-      
       
       // Determine best supported mime type for high-quality audio recording
       const options = {};
@@ -367,6 +368,33 @@ export class SpeechEngine {
 
   handleError(event) {
     console.error("Speech recognition error", event.error);
+    
+    // Self-healing for microphone conflict (especially on iOS/Safari or duplicate mic binds)
+    if ((event.error === 'not-allowed' || event.error === 'audio-capture' || event.error === 'service-not-allowed') && this.mediaRecorder) {
+      console.warn("Microphone conflict detected. Disabling MediaRecorder to let SpeechRecognition work.");
+      try {
+        if (this.mediaRecorder.state !== 'inactive') {
+          this.mediaRecorder.stop();
+        }
+      } catch(e) {}
+      this.mediaRecorder = null;
+      this.stopLiveEcho();
+      
+      // Close active stream tracks to release microphone lock for MediaRecorder
+      if (this.activeStream) {
+        this.activeStream.getTracks().forEach(track => track.stop());
+        this.activeStream = null;
+      }
+      
+      // Retry starting speech recognition after a short delay to allow mic release
+      if (this.isRecording && !this.isStopping) {
+        setTimeout(() => {
+          this.safeStartRecognition(2);
+        }, 300);
+      }
+      return;
+    }
+
     if (event.error !== 'aborted') {
       window.dispatchEvent(new CustomEvent('speecherror', { detail: event.error }));
     }

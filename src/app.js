@@ -1830,6 +1830,13 @@ const initApp = async () => {
     }
   });
 
+  window.addEventListener('speecherror', (e) => {
+    console.error("Speech recognition error:", e.detail);
+    if (e.detail === 'not-allowed' || e.detail === 'permission') {
+      alert("تعذر الوصول للميكروفون. يرجى إعطاء صلاحية الميكروفون للموقع من إعدادات المتصفح أو الهاتف لإجراء اختبار التسميع.");
+    }
+  });
+
   // Tour setup
   tour.defineSteps([
     { target: '.logo', title: 'مرحباً بك في محفّظ! 📖', description: 'التطبيق الذكي التفاعلي لمساعدتك ومساعدة أطفالك على حفظ وتدبر القرآن الكريم بأساليب مبتكرة.' },
