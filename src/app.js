@@ -1196,20 +1196,24 @@ const initApp = async () => {
       const wordSpans = ui.quranDisplay.querySelectorAll('.word');
       if (wordSpans.length > 0) {
         const normOpts = { removeDiacritics: true, unifyLetters: true };
-        let spokenIdx = 0;
+        let lastSpokenMatchedIdx = -1;
         const matchedSpokenIndices = new Set();
         wordSpans.forEach((span) => {
           if (span.classList.contains('ayah-number-marker')) return;
           const targetWord = speechEngine.matchAlgo.normalizer.normalize(span.textContent, normOpts);
           
           let found = false;
-          for (let i = Math.max(0, spokenIdx - 2); i < Math.min(spokenWords.length, spokenIdx + 6); i++) {
+          // Search only forward from the last matched spoken index to enforce strict sequential pronunciation order
+          const searchStart = lastSpokenMatchedIdx + 1;
+          const searchEnd = Math.min(spokenWords.length, searchStart + 5); // Search up to 5 words ahead for flexibility
+          
+          for (let i = searchStart; i < searchEnd; i++) {
             if (matchedSpokenIndices.has(i)) continue; // Don't match the same spoken word multiple times
             
             const cleanSpoken = speechEngine.matchAlgo.normalizer.normalize(spokenWords[i], normOpts);
             if (speechEngine.matchAlgo.isWordMatch(cleanSpoken, targetWord)) {
               found = true;
-              spokenIdx = i + 1;
+              lastSpokenMatchedIdx = i;
               matchedSpokenIndices.add(i); // Mark this spoken word as consumed
               break;
             }
