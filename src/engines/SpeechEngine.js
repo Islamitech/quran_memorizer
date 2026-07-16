@@ -107,12 +107,12 @@ export class SpeechEngine {
       this.currentRecordingSurah = AppState.current.surah.id;
       this.currentRecordingAyah = AppState.current.ayah.id;
       
-      const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || 
-                    (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+      const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || 
+                       (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
       
-      // On iOS, prioritize SpeechRecognition and bypass MediaRecorder to prevent mic conflict blocks
-      if (isIOS && this.isSupported) {
-        console.log("iOS detected. Prioritizing SpeechRecognition, bypassing MediaRecorder.");
+      // On mobile devices (Android & iOS), prioritize SpeechRecognition and bypass MediaRecorder to prevent mic conflict blocks
+      if (isMobile && this.isSupported) {
+        console.log("Mobile device detected. Prioritizing SpeechRecognition, bypassing MediaRecorder.");
         this.mediaRecorder = null;
         this.initRecognition();
         this.safeStartRecognition(3);
