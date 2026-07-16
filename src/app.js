@@ -1197,16 +1197,20 @@ const initApp = async () => {
       if (wordSpans.length > 0) {
         const normOpts = { removeDiacritics: true, unifyLetters: true };
         let spokenIdx = 0;
+        const matchedSpokenIndices = new Set();
         wordSpans.forEach((span) => {
           if (span.classList.contains('ayah-number-marker')) return;
           const targetWord = speechEngine.matchAlgo.normalizer.normalize(span.textContent, normOpts);
           
           let found = false;
           for (let i = Math.max(0, spokenIdx - 2); i < Math.min(spokenWords.length, spokenIdx + 6); i++) {
+            if (matchedSpokenIndices.has(i)) continue; // Don't match the same spoken word multiple times
+            
             const cleanSpoken = speechEngine.matchAlgo.normalizer.normalize(spokenWords[i], normOpts);
             if (speechEngine.matchAlgo.isWordMatch(cleanSpoken, targetWord)) {
               found = true;
               spokenIdx = i + 1;
+              matchedSpokenIndices.add(i); // Mark this spoken word as consumed
               break;
             }
           }
