@@ -1910,7 +1910,10 @@ const initApp = async () => {
   }
 
   function base64ToArrayBuffer(base64) {
-    const base64Clean = base64.replace(/^data:audio\/[a-zA-Z0-9\-+.]+;base64,/, '');
+    // Robustly strip any data URL prefix (including custom codecs params like webm;codecs=opus) by slicing after the ;base64, marker
+    const base64Index = base64.indexOf(';base64,');
+    const base64Clean = base64Index !== -1 ? base64.slice(base64Index + 8) : base64;
+    
     const binaryString = atob(base64Clean);
     const len = binaryString.length;
     const bytes = new Uint8Array(len);
@@ -1966,41 +1969,39 @@ const initApp = async () => {
     const startFallbackPlayer = () => {
       console.log("Using HTML5 Audio playback fallback for report:", reportId);
       fallbackAudio.src = report.audioBase64;
+      
+      const formatTime = (secs) => {
+        const m = Math.floor(secs / 60);
+        const s = Math.floor(secs % 60);
+        return `${m}:${s < 10 ? '0' : ''}${s}`;
+      };
+
+      // Use native HTML5 Audio events instead of risky wall-clock setInterval which cuts off during buffering
+      fallbackAudio.addEventListener('timeupdate', () => {
+        const current = fallbackAudio.currentTime;
+        const total = fallbackAudio.duration || report.duration || 1;
+        const percent = (current / total) * 100;
+        if (slider) slider.value = percent;
+        if (currTimeText) currTimeText.textContent = formatTime(current);
+      });
+
+      fallbackAudio.addEventListener('ended', () => {
+        if (activeReportPlayer && activeReportPlayer.id === reportId) {
+          stopActiveReportPlayer();
+        }
+      });
+
       fallbackAudio.play().catch(e => {
         console.error("HTML5 Audio fallback play failed:", e);
         if (playIcon) playIcon.style.display = 'block';
         if (pauseIcon) pauseIcon.style.display = 'none';
       });
       
-      fallbackAudio.onended = () => {
-        if (activeReportPlayer && activeReportPlayer.id === reportId) {
-          stopActiveReportPlayer();
-        }
-      };
-      
-      const startTime = Date.now();
-      const duration = report.duration || 5;
-      const timer = setInterval(() => {
-        const elapsed = (Date.now() - startTime) / 1000;
-        if (elapsed >= duration) {
-          stopActiveReportPlayer();
-        } else {
-          const percent = (elapsed / duration) * 100;
-          if (slider) slider.value = percent;
-          const formatTime = (secs) => {
-            const m = Math.floor(secs / 60);
-            const s = Math.floor(secs % 60);
-            return `${m}:${s < 10 ? '0' : ''}${s}`;
-          };
-          if (currTimeText) currTimeText.textContent = formatTime(elapsed);
-        }
-      }, 100);
-      
       activeReportPlayer = {
         id: reportId,
         audioEl: fallbackAudio,
         ctx: null,
-        timer: timer
+        timer: null
       };
     };
 
