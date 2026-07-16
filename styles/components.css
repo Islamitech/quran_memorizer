@@ -166,12 +166,13 @@ select:focus {
 .bottom-nav {
   background-color: var(--bg-card);
   border-top: 1px solid var(--border-light);
-  padding: 12px 24px 20px;
+  padding: 24px 24px 20px; /* Increased padding top for raised FAB */
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 18px; /* Increased gap to prevent timeline slider overlap */
   box-shadow: 0 -4px 12px rgba(0,0,0,0.03);
   z-index: 1005;
+  position: relative;
 }
 
 /* Timeline */
@@ -277,6 +278,25 @@ input[type="range"] {
 .play-btn:hover {
   background: var(--accent-primary);
   color: white;
+}
+
+/* Mic Button FAB Wrapper (Sculpted Raised Look) */
+.mic-fab-wrapper {
+  position: absolute;
+  top: -30px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 72px;
+  height: 72px;
+  background-color: var(--bg-card);
+  border-radius: 50%;
+  border-top: 1px solid var(--border-light);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 -4px 10px rgba(0,0,0,0.02);
+  z-index: 4;
+  overflow: visible; /* Prevent clipping of pulsating ripple animations */
 }
 
 /* Mic Button FAB */
@@ -614,8 +634,8 @@ input[type="range"] {
     line-height: 1.4 !important;
   }
   .bottom-nav {
-    padding: 8px 12px 14px !important;
-    gap: 8px !important;
+    padding: 20px 12px 14px !important;
+    gap: 14px !important;
   }
   .nav-controls {
     display: grid !important;
