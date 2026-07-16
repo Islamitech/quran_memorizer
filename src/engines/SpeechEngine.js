@@ -133,10 +133,10 @@ export class SpeechEngine {
       // Determine best supported mime type for high-quality audio recording
       const options = {};
       if (typeof MediaRecorder.isTypeSupported === 'function') {
-        if (MediaRecorder.isTypeSupported('audio/webm;codecs=opus')) {
-          options.mimeType = 'audio/webm;codecs=opus';
-        } else if (MediaRecorder.isTypeSupported('audio/mp4')) {
+        if (MediaRecorder.isTypeSupported('audio/mp4')) {
           options.mimeType = 'audio/mp4';
+        } else if (MediaRecorder.isTypeSupported('audio/webm;codecs=opus')) {
+          options.mimeType = 'audio/webm;codecs=opus';
         }
       }
       options.audioBitsPerSecond = 128000; // 128 kbps high quality audio
@@ -162,24 +162,9 @@ export class SpeechEngine {
       recorder.onstop = () => {
         const mimeType = recorder.mimeType || 'audio/webm';
         
-        let chunksToSave = recorderChunks;
-        
-        // Dynamic trimming: only keep chunks from the start of the correct recitation (with 1.5s padding)
-        if (this.isSupported && this.correctRecordingStartIndex !== null) {
-          const startTimeVal = this.resultStartTimes[this.correctRecordingStartIndex];
-          if (startTimeVal) {
-            const safetyMargin = 1500; // 1.5 seconds safety margin to not cut the first word
-            const trimThreshold = startTimeVal - safetyMargin;
-            chunksToSave = recorderChunks.filter(chunk => chunk.timestamp >= trimThreshold);
-          }
-        }
-        
-        // If nothing was kept (safety fallback), use all chunks
-        if (chunksToSave.length === 0) {
-          chunksToSave = recorderChunks;
-        }
-        
-        const rawChunks = chunksToSave.map(c => c.data);
+        // Preserve all chunks (no dynamic trimming) to ensure critical container headers (ftyp/moov/EBML) are kept intact
+        // Discarding initial chunks creates corrupted, unplayable files.
+        const rawChunks = recorderChunks.map(c => c.data);
         const audioBlob = new Blob(rawChunks, { type: mimeType });
         
         // Retrieve captured metadata from the recorder instance itself to prevent race conditions during transitions
@@ -193,8 +178,8 @@ export class SpeechEngine {
         
         // Calculate accurate duration of the saved audio segments
         let duration = 0;
-        if (chunksToSave.length > 1) {
-          duration = (chunksToSave[chunksToSave.length - 1].timestamp - chunksToSave[0].timestamp) / 1000;
+        if (recorderChunks.length > 1) {
+          duration = (recorderChunks[recorderChunks.length - 1].timestamp - recorderChunks[0].timestamp) / 1000;
         } else {
           duration = (Date.now() - recordingStartTime) / 1000;
         }

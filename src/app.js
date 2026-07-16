@@ -2194,7 +2194,7 @@ const initApp = async () => {
           ${report.echoEnabled ? '<span style="font-size: 0.7rem; color: #0ea5e9; background: rgba(14, 165, 233, 0.1); padding: 2px 6px; border-radius: 4px; font-weight: bold; flex-shrink: 0; font-family: var(--font-arabic);">صـدى</span>' : ''}
         </div>
       ` : '<p>لا يوجد تسجيل صوتي.</p>';
-      const extension = mimeType.includes('mp4') ? 'mp4' : 'webm';
+      const extension = mimeType.includes('mp4') ? 'm4a' : 'webm';
       const durationStr = report.duration ? ` | مدة التسجيل: ${formatTime(report.duration)}` : '';
       
       card.innerHTML = `
