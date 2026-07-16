@@ -141,45 +141,51 @@ export class SpeechEngine {
       options.audioBitsPerSecond = 128000; // 128 kbps high quality audio
       
       // Create new MediaRecorder using the raw microphone stream to prevent iOS Safari crashes
-      this.mediaRecorder = new MediaRecorder(this.activeStream, options);
-      this.audioChunks = [];
-      this.recordingStartTime = Date.now();
+      const recorder = new MediaRecorder(this.activeStream, options);
+      this.mediaRecorder = recorder;
       
-      this.mediaRecorder.ondataavailable = e => {
+      const recorderChunks = [];
+      const recordingStartTime = Date.now();
+      const currentSurah = AppState.current.surah.id;
+      const currentAyah = AppState.current.ayah.id;
+      
+      recorder.ondataavailable = e => {
         if (e.data.size > 0) {
-          this.audioChunks.push({
+          recorderChunks.push({
             data: e.data,
             timestamp: Date.now()
           });
         }
       };
       
-      this.mediaRecorder.onstop = () => {
-        const mimeType = this.mediaRecorder.mimeType || 'audio/webm';
+      recorder.onstop = () => {
+        const mimeType = recorder.mimeType || 'audio/webm';
         
-        let chunksToSave = this.audioChunks;
+        let chunksToSave = recorderChunks;
         
         // Dynamic trimming: only keep chunks from the start of the correct recitation (with 1.5s padding)
         if (this.isSupported && this.correctRecordingStartIndex !== null) {
-          const startTime = this.resultStartTimes[this.correctRecordingStartIndex];
-          if (startTime) {
+          const startTimeVal = this.resultStartTimes[this.correctRecordingStartIndex];
+          if (startTimeVal) {
             const safetyMargin = 1500; // 1.5 seconds safety margin to not cut the first word
-            const trimThreshold = startTime - safetyMargin;
-            chunksToSave = this.audioChunks.filter(chunk => chunk.timestamp >= trimThreshold);
+            const trimThreshold = startTimeVal - safetyMargin;
+            chunksToSave = recorderChunks.filter(chunk => chunk.timestamp >= trimThreshold);
           }
         }
         
         // If nothing was kept (safety fallback), use all chunks
         if (chunksToSave.length === 0) {
-          chunksToSave = this.audioChunks;
+          chunksToSave = recorderChunks;
         }
         
         const rawChunks = chunksToSave.map(c => c.data);
         const audioBlob = new Blob(rawChunks, { type: mimeType });
-        const recordedSurah = this.currentRecordingSurah;
-        const recordedAyah = this.currentRecordingAyah;
-        const recordedText = this.currentRecordingText;
-        const recordedScore = this.currentRecordingScore;
+        
+        // Retrieve captured metadata from the recorder instance itself to prevent race conditions during transitions
+        const recordedSurah = recorder.recordedSurah || currentSurah;
+        const recordedAyah = recorder.recordedAyah || currentAyah;
+        const recordedText = recorder.recordedText || '';
+        const recordedScore = recorder.recordedScore || 0;
         
         // Safety: abort recognition again to ensure no dangling recognition
         try { this.recognition.abort(); } catch(e) {}
@@ -189,7 +195,7 @@ export class SpeechEngine {
         if (chunksToSave.length > 1) {
           duration = (chunksToSave[chunksToSave.length - 1].timestamp - chunksToSave[0].timestamp) / 1000;
         } else {
-          duration = (Date.now() - this.recordingStartTime) / 1000;
+          duration = (Date.now() - recordingStartTime) / 1000;
         }
         duration = Math.max(duration, 1.0);
         
@@ -267,9 +273,13 @@ export class SpeechEngine {
     this.isStopping = true;  // CRITICAL: Prevent handleEnd from restarting recognition
     this.pendingRestart = restartForNextAyah;
     
-    // Capture the detected text and score NOW before loadAyah resets them
-    this.currentRecordingText = AppState.speech.detectedText || '';
-    this.currentRecordingScore = AppState.speech.latestScore || 0;
+    // Capture the detected text, score, surah, and ayah on the mediaRecorder itself to isolate it and prevent transition race conditions
+    if (this.mediaRecorder) {
+      this.mediaRecorder.recordedText = AppState.speech.detectedText || '';
+      this.mediaRecorder.recordedScore = AppState.speech.latestScore || 0;
+      this.mediaRecorder.recordedSurah = this.currentRecordingSurah;
+      this.mediaRecorder.recordedAyah = this.currentRecordingAyah;
+    }
     
     // Stop speech recognition only if supported
     if (this.isSupported && this.recognition) {
