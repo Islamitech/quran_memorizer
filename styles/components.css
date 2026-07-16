@@ -529,10 +529,12 @@ input[type="range"] {
     padding: 10px 12px !important;
   }
   .app-header h1 {
-    display: none !important; /* Hide 'محفّظ' text to free space for icons on mobile */
+    display: block !important; /* Make title visible on mobile */
+    font-size: 0.95rem !important;
+    white-space: nowrap;
   }
   .logo {
-    gap: 0 !important;
+    gap: 6px !important;
   }
   .header-controls {
     gap: 4px !important;
