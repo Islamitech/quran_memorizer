@@ -180,48 +180,50 @@
         <span id="time-total" class="time-text">00:00</span>
       </div>
 
-      <!-- Controls Row -->
-      <div class="nav-controls">
-        <div class="player-buttons">
-          <button id="btn-next" class="nav-icon-btn" aria-label="التالي">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 4 15 12 5 20 5 4"></polygon><line x1="19" y1="5" x2="19" y2="19"></line></svg>
+      <!-- Controls Row (Structured Grid Layout) -->
+      <div class="nav-controls" style="display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; width: 100%; box-sizing: border-box;">
+        
+        <!-- Left Group: User Recording & Echo Controls -->
+        <div class="user-rec-controls" style="display: flex; align-items: center; justify-content: flex-start; gap: 14px;">
+          <!-- Mosque Echo Toggle Button -->
+          <button id="btn-echo" class="nav-icon-btn echo-btn" title="تشغيل صدى المسجد" style="padding: 8px; border-radius: 50%; width: 38px; height: 38px; display: flex; align-items: center; justify-content: center; background: var(--bg-secondary); border: 1px solid var(--border-light); transition: all 0.2s; color: var(--accent-primary);">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"></path><path d="M19 10v2a7 7 0 0 1-14 0v-2"></path></svg>
           </button>
-          
-          <button id="btn-play-pause" class="nav-icon-btn play-btn" aria-label="تشغيل">
-            <svg class="icon-play" width="28" height="28" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
-            <svg class="icon-pause" width="28" height="28" viewBox="0 0 24 24" fill="currentColor" style="display:none;"><rect x="6" y="4" width="4" height="16"></rect><rect x="14" y="4" width="4" height="16"></rect></svg>
-          </button>
-          
-          <button id="btn-prev" class="nav-icon-btn" aria-label="السابق">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="19 20 9 12 19 4 19 20"></polygon><line x1="5" y1="19" x2="5" y2="5"></line></svg>
-          </button>
+          <input type="checkbox" id="chk-live-echo" checked style="display: none;">
 
-          <button id="btn-repeat" class="nav-icon-btn" aria-label="تكرار الآية">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="17 1 21 5 17 9"></polyline><path d="M3 11V9a4 4 0 0 1 4-4h14"></path><polyline points="7 23 3 19 7 15"></polyline><path d="M21 13v2a4 4 0 0 1-4 4H3"></path></svg>
+          <!-- Play Recording Button -->
+          <button id="btn-play-recording" class="nav-icon-btn" title="استمع لتسجيلك الخاص" disabled style="opacity: 0.4; padding: 8px; border-radius: 50%; width: 38px; height: 38px; display: flex; align-items: center; justify-content: center; background: var(--bg-secondary); border: 1px solid var(--border-light); transition: all 0.2s;">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
           </button>
         </div>
 
-
-
-        <!-- Mic Control Group -->
-        <div class="mic-control-group" style="display: flex; align-items: center; gap: 12px;">
-          <!-- Play Recording Button -->
-          <button id="btn-play-recording" class="nav-icon-btn" aria-label="استمع لتسجيلك" disabled style="opacity: 0.5;">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
-          </button>
-          
-          <!-- Mic Button -->
-          <button id="btn-mic" class="mic-btn-minimal" aria-label="تسميع">
+        <!-- Center: Floating Action Button (FAB) Microphone -->
+        <div class="center-mic-container" style="position: relative; display: flex; justify-content: center; align-items: center;">
+          <button id="btn-mic" class="mic-fab-btn" aria-label="بدء التسميع التفاعلي">
             <div class="mic-ripple ripple-1"></div>
             <div class="mic-ripple ripple-2"></div>
-            <svg class="mic-icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"></path><path d="M19 10v2a7 7 0 0 1-14 0v-2"></path><line x1="12" y1="19" x2="12" y2="22"></line></svg>
+            <svg class="mic-icon" width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"></path><path d="M19 10v2a7 7 0 0 1-14 0v-2"></path><line x1="12" y1="19" x2="12" y2="22"></line></svg>
           </button>
+        </div>
 
-          <!-- Mosque Echo Checkbox Toggle -->
-          <label style="display: flex; align-items: center; gap: 6px; font-size: 0.9rem; font-weight: 600; cursor: pointer; color: var(--text-secondary); user-select: none;">
-            <input type="checkbox" id="chk-live-echo" checked style="accent-color: var(--accent-primary); cursor: pointer; width: 16px; height: 16px;">
-            <span>صدى</span>
-          </label>
+        <!-- Right Group: Sheikh Playback Controls -->
+        <div class="sheikh-play-controls" style="display: flex; align-items: center; justify-content: flex-end; gap: 10px;">
+          <button id="btn-repeat" class="nav-icon-btn" title="تكرار الآية للشيخ" style="padding: 8px; border-radius: 50%; width: 34px; height: 34px; display: flex; align-items: center; justify-content: center; background: transparent; transition: all 0.2s;">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="17 1 21 5 17 9"></polyline><path d="M3 11V9a4 4 0 0 1 4-4h14"></path><polyline points="7 23 3 19 7 15"></polyline><path d="M21 13v2a4 4 0 0 1-4 4H3"></path></svg>
+          </button>
+          
+          <button id="btn-prev" class="nav-icon-btn" title="الآية السابقة" style="padding: 8px; border-radius: 50%; width: 34px; height: 34px; display: flex; align-items: center; justify-content: center; background: transparent; transition: all 0.2s;">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="19 20 9 12 19 4 19 20"></polygon><line x1="5" y1="19" x2="5" y2="5"></line></svg>
+          </button>
+          
+          <button id="btn-play-pause" class="nav-icon-btn play-sheikh-btn" title="استمع للشيخ" style="display: flex; align-items: center; justify-content: center; transition: all 0.2s;">
+            <svg class="icon-play" width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+            <svg class="icon-pause" width="22" height="22" viewBox="0 0 24 24" fill="currentColor" style="display:none;"><rect x="6" y="4" width="4" height="16"></rect><rect x="14" y="4" width="4" height="16"></rect></svg>
+          </button>
+          
+          <button id="btn-next" class="nav-icon-btn" title="الآية التالية" style="padding: 8px; border-radius: 50%; width: 34px; height: 34px; display: flex; align-items: center; justify-content: center; background: transparent; transition: all 0.2s;">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 4 15 12 5 20 5 4"></polygon><line x1="19" y1="5" x2="19" y2="19"></line></svg>
+          </button>
         </div>
       </div>
 
