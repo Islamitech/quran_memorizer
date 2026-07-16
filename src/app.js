@@ -1253,11 +1253,16 @@ const initApp = async () => {
       }
 
       // Check if real-time revealed ratio is high enough to trigger success (e.g. >= 75% of words are green)
-      const revealedWords = ui.quranDisplay.querySelectorAll('.word.revealed').length;
-      const totalWords = ui.quranDisplay.querySelectorAll('.word:not(.ayah-number-marker)').length;
+      // And ensure they actually finished the Ayah by requiring the last word to be revealed
+      const wordSpansList = Array.from(ui.quranDisplay.querySelectorAll('.word:not(.ayah-number-marker)'));
+      const totalWords = wordSpansList.length;
+      const revealedWords = wordSpansList.filter(span => span.classList.contains('revealed')).length;
       const revealedRatio = totalWords > 0 ? (revealedWords / totalWords) : 0;
-      if (revealedRatio >= 0.75) {
-        isCorrect = true;
+      if (revealedRatio >= 0.75 && totalWords > 0) {
+        const lastWordRevealed = wordSpansList[totalWords - 1]?.classList.contains('revealed');
+        if (lastWordRevealed) {
+          isCorrect = true;
+        }
       }
 
       // Mark as mastered if correct, otherwise mark as unmastered (for logical accuracy)
