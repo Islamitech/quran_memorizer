@@ -1252,11 +1252,11 @@ const initApp = async () => {
         isCorrect = hasReachedEnd;
       }
 
-      // Check if real-time revealed ratio is high enough to trigger success (e.g. >= 80% of words are green)
+      // Check if real-time revealed ratio is high enough to trigger success (e.g. >= 75% of words are green)
       const revealedWords = ui.quranDisplay.querySelectorAll('.word.revealed').length;
       const totalWords = ui.quranDisplay.querySelectorAll('.word:not(.ayah-number-marker)').length;
       const revealedRatio = totalWords > 0 ? (revealedWords / totalWords) : 0;
-      if (revealedRatio >= 0.80) {
+      if (revealedRatio >= 0.75) {
         isCorrect = true;
       }
 

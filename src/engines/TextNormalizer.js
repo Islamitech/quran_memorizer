@@ -60,6 +60,9 @@ export class TextNormalizer {
   normalize(text, options = {}) {
     let result = text;
     
+    // Replace superscript/dagger alef with normal alef to preserve the 'aa' sound in Uthmani spelling
+    result = result.replace(/\u0670/g, 'ا');
+    
     if (options.removeDiacritics !== false) {
       // Remove all Arabic diacritics, tashkeel, Uthmani marks, and tatweel
       result = result.replace(this.diacritics, '');
