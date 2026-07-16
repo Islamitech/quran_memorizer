@@ -166,6 +166,7 @@ const initApp = async () => {
   let repeatSurahId = null;
   let currentPlayingRecording = null;
   let isTransitioning = false;
+  let isChangingAudioSource = false;
   let ayahErrorCount = 0;
 
   // Continuous gapless preloader system
@@ -357,6 +358,9 @@ const initApp = async () => {
   }
 
   function loadAyah(ayahNumber, arabicData) {
+    isChangingAudioSource = true;
+    setTimeout(() => { isChangingAudioSource = false; }, 250);
+
     if (correctTransitionTimeout) {
       clearTimeout(correctTransitionTimeout);
       correctTransitionTimeout = null;
@@ -519,7 +523,18 @@ const initApp = async () => {
       // Play automatically if playing state is true
       if (AppState.player.isPlaying) {
         if (speechEngine.isRecording) speechEngine.stop(); // Prevent overlap
-        ui.audio.play().catch(e => { AppState.player.isPlaying = false; });
+        
+        if (ui.audio.readyState >= 2) {
+          ui.audio.play().catch(e => { AppState.player.isPlaying = false; });
+        } else {
+          const playHandler = () => {
+            if (AppState.player.isPlaying) {
+              ui.audio.play().catch(e => { AppState.player.isPlaying = false; });
+            }
+            ui.audio.removeEventListener('canplay', playHandler);
+          };
+          ui.audio.addEventListener('canplay', playHandler);
+        }
       }
     }
   }
@@ -566,6 +581,15 @@ const initApp = async () => {
     setTimeout(syncPlaybackState, 300);
   });
 
+  ui.audio.addEventListener('error', (e) => {
+    console.error("Reciter audio loading error:", e);
+    if (AppState.player.isPlaying) {
+      AppState.player.isPlaying = false;
+      syncPlaybackState();
+      alert("تعذر تحميل تلاوة الآية. يرجى التحقق من اتصال الإنترنت وتجربة إعادة التشغيل.");
+    }
+  });
+
   ui.audio.addEventListener('playing', () => {
     isTransitioning = false;
     AppState.player.isPlaying = true;
@@ -581,6 +605,10 @@ const initApp = async () => {
     setTimeout(syncPlaybackState, 100);
   });
   ui.audio.addEventListener('ended', () => {
+    if (isChangingAudioSource) {
+      console.log("Ended event ignored - audio source change in progress");
+      return;
+    }
     if (AppState.player.repeatAyah) {
       ui.audio.currentTime = 0;
       ui.audio.play();
@@ -1146,6 +1174,34 @@ const initApp = async () => {
       const refWords = cleanRef.split(' ').filter(w => w.length > 0);
       const spokenWordsCount = spokenWords.length;
       const refWordsCount = refWords.length;
+
+      // Real-time word unblur matching:
+      const wordSpans = ui.quranDisplay.querySelectorAll('.word');
+      if (wordSpans.length > 0) {
+        const normOpts = { removeDiacritics: true, unifyLetters: true };
+        let spokenIdx = 0;
+        wordSpans.forEach((span) => {
+          if (span.classList.contains('ayah-number-marker')) return;
+          const targetWord = speechEngine.matchAlgo.normalizer.normalize(span.textContent, normOpts);
+          
+          let found = false;
+          for (let i = Math.max(0, spokenIdx - 2); i < Math.min(spokenWords.length, spokenIdx + 6); i++) {
+            const cleanSpoken = speechEngine.matchAlgo.normalizer.normalize(spokenWords[i], normOpts);
+            if (speechEngine.matchAlgo.isWordMatch(cleanSpoken, targetWord)) {
+              found = true;
+              spokenIdx = i + 1;
+              break;
+            }
+          }
+          
+          if (found) {
+            span.classList.add('revealed');
+            if (document.body.classList.contains('theme-child')) {
+              span.style.color = '#ff9f43';
+            }
+          }
+        });
+      }
       
       // Relaxed matching check: accepts if score >= 78% (allowing speech-to-text minor word/pronunciation variations)
       const scoreCorrect = score >= 0.78;

@@ -897,14 +897,20 @@ input[type="range"] {
 }
 
 #current-ayah-display.text-hidden .word {
-  display: none !important;
+  filter: blur(8px);
+  cursor: pointer;
+  user-select: none;
+  transition: filter 0.3s ease, color 0.3s ease, text-shadow 0.3s ease;
 }
 
-#current-ayah-display.reveal-words .word,
-#current-ayah-display.text-hidden.reveal-words .word {
-  display: inline-block !important;
+#current-ayah-display.text-hidden .word.revealed {
+  filter: blur(0px) !important;
   color: var(--accent-success, #10b981) !important;
-  animation: reveal-pulse 0.5s ease-out;
+}
+
+#current-ayah-display.text-hidden:active .word,
+#current-ayah-display.text-hidden.reveal-words .word {
+  filter: blur(0px) !important;
 }
 
 #tafsir-display.text-hidden,
