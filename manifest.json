@@ -1,11 +1,11 @@
 {
-  "name": "محفّظ القرآن",
-  "short_name": "محفّظ",
-  "description": "تطبيق ويب تقدمي لحفظ القرآن الكريم",
+  "name": "محفظ القران الكريم",
+  "short_name": "محفظ",
+  "description": "تطبيق تفاعلي ذكي لحفظ ومراجعة القرآن الكريم",
   "start_url": "./",
   "display": "standalone",
-  "background_color": "#0a0a0a",
-  "theme_color": "#0a0a0a",
+  "background_color": "#ffffff",
+  "theme_color": "#0ea5e9",
   "orientation": "portrait",
   "icons": [
     {
