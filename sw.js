@@ -1,6 +1,6 @@
 // sw.js - Service Worker المتقدم
 
-const CACHE_VERSION = 'v117';
+const CACHE_VERSION = 'v118';
 const CACHE_NAMES = {
   static: `static-${CACHE_VERSION}`,
   audio: `audio-${CACHE_VERSION}`,
@@ -26,8 +26,11 @@ const STATIC_ASSETS = [
   './src/api/QuranAPI.js',
   './src/engines/KaraokeEngine.js',
   './src/engines/SpeechEngine.js',
+  './src/engines/MatchAlgorithm.js',
+  './src/engines/TextNormalizer.js',
   './src/components/InteractiveTour.js',
-  './src/utils/DbManager.js'
+  './src/utils/DbManager.js',
+  './src/utils/Validator.js'
 ];
 
 // استراتيجيات التخزين المختلفة
