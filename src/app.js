@@ -539,6 +539,82 @@ const initApp = async () => {
     }
   }
 
+  function reloadAyahAudio() {
+    const reciter = AppState.settings.reciter || 'fares';
+    const surahId = AppState.current.surah.id;
+    const ayahNumber = AppState.current.ayah.id;
+    
+    // Find metadata for current surah
+    const curSurahData = surahsData.find(s => s.id === surahId);
+    if (!curSurahData) return;
+    
+    // Get the ayah text from cache
+    let ayahText = '';
+    const cacheKey = `surah_${surahId}`;
+    const cached = quranAPI.cache.get(cacheKey);
+    if (cached && cached.arabic) {
+      const ayahData = cached.arabic.find(a => a.id == ayahNumber);
+      if (ayahData) {
+        ayahText = ayahData.text;
+      }
+    }
+    
+    const playAudio = () => {
+      ui.audio.volume = 1.0;
+      ui.audio.muted = false;
+      
+      if (ayahText) {
+        karaokeEngine.setWords(ayahText, ui.quranDisplay);
+      }
+      updateMediaSessionMetadata(ayahNumber);
+      
+      if (AppState.player.isPlaying) {
+        if (speechEngine.isRecording) speechEngine.stop();
+        
+        if (ui.audio.readyState >= 2) {
+          ui.audio.play().catch(e => { AppState.player.isPlaying = false; });
+        } else {
+          const playHandler = () => {
+            if (AppState.player.isPlaying) {
+              ui.audio.play().catch(e => { AppState.player.isPlaying = false; });
+            }
+            ui.audio.removeEventListener('canplay', playHandler);
+          };
+          ui.audio.addEventListener('canplay', playHandler);
+        }
+      }
+    };
+
+    if (navigator.onLine) {
+      const netUrl = quranAPI.generateAudioUrl(surahId, ayahNumber, reciter);
+      ui.audio.src = netUrl;
+      playAudio();
+      
+      // Cache to IndexedDB in background
+      fetch(netUrl)
+        .then(res => { if (res.ok) return res.blob(); })
+        .then(blob => { if (blob) DbManager.saveOfflineAudio(reciter, surahId, ayahNumber, blob); })
+        .catch(err => console.warn("Background audio cache failed:", err));
+        
+      preloadNextAyah(surahId, ayahNumber);
+    } else {
+      DbManager.getOfflineAudio(reciter, surahId, ayahNumber).then(cachedBlob => {
+        if (cachedBlob) {
+          const localUrl = URL.createObjectURL(cachedBlob);
+          ui.audio.src = localUrl;
+          playAudio();
+        } else {
+          ui.audio.src = '';
+          AppState.player.isPlaying = false;
+          checkOfflineStatusAndAlert();
+        }
+        preloadNextAyah(surahId, ayahNumber);
+      }).catch(err => {
+        preloadNextAyah(surahId, ayahNumber);
+      });
+    }
+  }
+
   observer.subscribe('isPlaying', (val) => {
     if(val) {
       if (speechEngine.isRecording) speechEngine.stop(); // Stop mic if audio plays
@@ -670,13 +746,20 @@ const initApp = async () => {
       AppState.player.isPlaying = false;
     } else {
       if (speechEngine.isRecording) speechEngine.stop();
-      ui.audio.volume = 1.0;
-      ui.audio.muted = false;
-      ui.audio.play().catch(e => {
-        alert("لم نتمكن من تشغيل الصوت. تأكد من اتصالك بالإنترنت. " + e.message);
-        AppState.player.isPlaying = false;
-      });
-      AppState.player.isPlaying = true;
+      
+      const hasNoSource = !ui.audio.src || ui.audio.src === '' || ui.audio.src === window.location.href;
+      if (hasNoSource || ui.audio.error || ui.audio.networkState === HTMLMediaElement.NETWORK_NO_SOURCE) {
+        AppState.player.isPlaying = true;
+        reloadAyahAudio();
+      } else {
+        ui.audio.volume = 1.0;
+        ui.audio.muted = false;
+        AppState.player.isPlaying = true;
+        ui.audio.play().catch(e => {
+          console.warn("Direct play failed, attempting reload:", e);
+          reloadAyahAudio();
+        });
+      }
     }
   });
 
@@ -2823,6 +2906,15 @@ const initApp = async () => {
       }
     });
   }
+
+  window.addEventListener('online', () => {
+    console.log("Network online status detected.");
+    const hasNoSource = !ui.audio.src || ui.audio.src === '' || ui.audio.src === window.location.href;
+    if (AppState.player.isPlaying && (hasNoSource || ui.audio.error)) {
+      reloadAyahAudio();
+    }
+    preloadNextAyah(AppState.current.surah.id, AppState.current.ayah.id);
+  });
 
   checkOfflineStatusAndAlert();
   loadSurah(AppState.current.surah.id);
