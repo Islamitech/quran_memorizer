@@ -48,17 +48,27 @@ export class MatchAlgorithm {
   }
   
   /**
-   * دالة مطابقة ذكية تحل مشكلة بتر الحروف الأخيرة والأخطاء الإملائية البسيطة
+   * دالة مطابقة ذكية تحل مشكلة بتر الحروف الأخيرة والمدود وأخطاء التعرف الصوتي الخفيفة
    */
   isWordMatch(spoken, ref) {
     if (spoken === ref) return true;
+    if (!spoken || !ref) return false;
     
     // حل مشكلة بتر نهاية الكلمة (مثل قبول "للمت" كجزء صح من "للمتقين")
     if (ref.startsWith(spoken) && spoken.length >= 3) return true;
     if (spoken.startsWith(ref) && ref.length >= 3) return true;
     
-    // فحص الأخطاء الإملائية الخفيفة (فرق حرف واحد فقط في الكلمات الطويلة)
-    if (this.getLevenshteinDistance(spoken, ref) <= 1 && ref.length > 3) return true;
+    // فحص الأخطاء الإملائية والتعرف الصوتي (فرق حرف واحد فقط في الكلمات من 3 أحرف فأكثر)
+    const len = Math.max(spoken.length, ref.length);
+    if (this.getLevenshteinDistance(spoken, ref) <= 1 && len >= 3) return true;
+
+    // فحص الهيكل الصوتي للجذر العربي لتجاوز مدود التجويد (مثل قول <-> قل، اتقي <-> اتق)
+    const stripWeak = s => s.replace(/[اوىي]/g, '');
+    const skSpoken = stripWeak(spoken);
+    const skRef = stripWeak(ref);
+    if (skSpoken.length >= 2 && skSpoken === skRef) {
+      return true;
+    }
     
     return false;
   }

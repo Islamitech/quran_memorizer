@@ -55,10 +55,48 @@ export class TextNormalizer {
       'اله': 'الاه',
       'الاله': 'الالاه'
     };
+
+    // توسيع أدوات النداء والتنبيه العثمانية المتصلة لتطابق الكلام المنطوق
+    this.particleExpansions = {
+      'ياايها': 'يا ايها',
+      'ياايتها': 'يا ايتها',
+      'يااهل': 'يا اهل',
+      'يابني': 'يا بني',
+      'ياقوم': 'يا قوم',
+      'ياعباد': 'يا عباد',
+      'ياادم': 'يا ادم',
+      'يامريم': 'يا مريم',
+      'ياموسى': 'يا موسى',
+      'ياعيسى': 'يا عيسى',
+      'يانوح': 'يا نوح',
+      'ياابراهيم': 'يا ابراهيم',
+      'ياليتني': 'يا ليتني',
+      'ياحسرة': 'يا حسرة',
+      'ياويلتى': 'يا ويلتى',
+      'يابشرى': 'يا بشرى',
+      'ياصاحبي': 'يا صاحبي',
+      'ياابت': 'يا ابت',
+      'ياصالح': 'يا صالح',
+      'ياهود': 'يا هود',
+      'ياشعيب': 'يا شعيب',
+      'ياليت': 'يا ليت',
+      'ياويلنا': 'يا ويلنا',
+      'ياحسرتنا': 'يا حسرتنا',
+      'ياجبال': 'يا جبال',
+      'يانار': 'يا نار',
+      'هاانتم': 'ها انتم',
+      'هاولاء': 'ها اولاء',
+      'مالهذا': 'مال هذا',
+      'ويكانه': 'وي كانه'
+    };
   }
   
   normalize(text, options = {}) {
+    if (!text) return '';
     let result = text;
+
+    // Remove invisible zero-width characters (ZWSP, ZWNJ, ZWJ, LRM, RLM, BOM)
+    result = result.replace(/[\u200B-\u200F\uFEFF]/g, '');
     
     // Replace superscript/dagger alef with normal alef to preserve the 'aa' sound in Uthmani spelling
     result = result.replace(/\u0670/g, 'ا');
@@ -77,6 +115,8 @@ export class TextNormalizer {
 
     // Unify basic letter variations BEFORE muqattaah expansion to resolve hamza mismatch bugs
     if (options.unifyLetters !== false) {
+      result = result.replace(/ءا/g, 'ا'); // Quranic standalone hamza followed by alif (e.g. ءَامَنُواْ -> امنوا)
+      result = result.replace(/(?:^|\s)ء([ا-ي])/g, ' ا$1'); // Initial hamza before consonant
       result = result.replace(/[أإآٱ]/g, 'ا');
       result = result.replace(/ة/g, 'ه');
       result = result.replace(/ؤ/g, 'و');
@@ -85,7 +125,7 @@ export class TextNormalizer {
     }
 
     // فحص وتوسيع الحروف المقطعة المقروءة بناءً على الخريطة اللفظية
-    let words = result.split(' ');
+    let words = result.split(/\s+/).filter(w => w.length > 0);
     words = words.map(word => this.muqattaahMap[word] || word);
     result = words.join(' ');
     
@@ -98,9 +138,9 @@ export class TextNormalizer {
       result = result.replace(/حاء/g, 'حا');
     }
 
-    // Normalize Uthmani spelling variants to standard spoken spellings
-    let finalWords = result.split(' ');
-    finalWords = finalWords.map(word => this.uthmaniToStandardMap[word] || word);
+    // Normalize Uthmani spelling variants and vocative particles to standard spoken spellings
+    let finalWords = result.split(/\s+/).filter(w => w.length > 0);
+    finalWords = finalWords.map(word => this.particleExpansions[word] || this.uthmaniToStandardMap[word] || word);
     result = finalWords.join(' ');
     
     if (options.normalizeSpaces !== false) {

@@ -240,6 +240,10 @@ export class SpeechEngine {
     try {
       this.recognition.start();
     } catch(e) {
+      // If already started, that's fine
+      if (e.name === 'InvalidStateError' || (e.message && e.message.includes('already started'))) {
+        return;
+      }
       console.warn("SpeechRecognition start failed, retrying...", e);
       if (retries > 0 && this.isRecording && !this.isStopping) {
         setTimeout(() => {
@@ -313,7 +317,8 @@ export class SpeechEngine {
     let interimTranscript = '';
     let latestConfidence = 0;
     
-    for (let i = event.resultIndex; i < event.results.length; ++i) {
+    // Accumulate all final results from index 0 to preserve complete speech history across pauses
+    for (let i = 0; i < event.results.length; ++i) {
       if (event.results[i].isFinal) {
         finalTranscript += event.results[i][0].transcript + ' ';
         latestConfidence = event.results[i][0].confidence;
@@ -380,16 +385,20 @@ export class SpeechEngine {
       return;
     }
 
-    if (event.error !== 'aborted') {
+    if (event.error !== 'aborted' && event.error !== 'no-speech') {
       window.dispatchEvent(new CustomEvent('speecherror', { detail: event.error }));
     }
   }
 
   handleEnd() {
-    // Speech recognition ended (browser auto-stops on iOS sometimes).
+    // Speech recognition ended (browser auto-stops on silence, pause, or mobile).
     // Only restart if we're actively recording AND not in the process of stopping.
     if (this.isRecording && !this.isStopping && !this.pendingRestart) {
-      this.safeStartRecognition(0);
+      setTimeout(() => {
+        if (this.isRecording && !this.isStopping && !this.pendingRestart) {
+          this.safeStartRecognition(3);
+        }
+      }, 150);
     }
   }
 }

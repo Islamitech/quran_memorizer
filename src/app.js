@@ -8,7 +8,7 @@ import { InteractiveTour } from './components/InteractiveTour.js';
 import { DbManager } from './utils/DbManager.js';
 
 // Force update if app version has changed (handles aggressive PWA caching)
-const CURRENT_APP_VERSION = 'v121';
+const CURRENT_APP_VERSION = 'v122';
 if (localStorage.getItem('app_cache_ver') !== CURRENT_APP_VERSION) {
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.getRegistrations().then(regs => {
@@ -1305,21 +1305,56 @@ const initApp = async () => {
         wordSpans.forEach((span) => {
           if (span.classList.contains('ayah-number-marker')) return;
           const targetWord = speechEngine.matchAlgo.normalizer.normalize(span.textContent, normOpts);
+          const targetParts = targetWord.split(' ').filter(p => p.length > 0);
           
           let found = false;
           // Search only forward from the last matched spoken index to enforce strict sequential pronunciation order
           const searchStart = lastSpokenMatchedIdx + 1;
-          const searchEnd = Math.min(spokenWords.length, searchStart + 5); // Search up to 5 words ahead for flexibility
+          const searchEnd = Math.min(spokenWords.length, searchStart + 6); // Search up to 6 words ahead for flexibility
           
           for (let i = searchStart; i < searchEnd; i++) {
             if (matchedSpokenIndices.has(i)) continue; // Don't match the same spoken word multiple times
             
             const cleanSpoken = speechEngine.matchAlgo.normalizer.normalize(spokenWords[i], normOpts);
+            
+            // 1. Direct word or full phrase match
             if (speechEngine.matchAlgo.isWordMatch(cleanSpoken, targetWord)) {
               found = true;
               lastSpokenMatchedIdx = i;
               matchedSpokenIndices.add(i); // Mark this spoken word as consumed
               break;
+            }
+
+            // 2. Multi-part match (e.g. target is "يا ايها" and spoken has ["يا", "ايها"], or "الف لام ميم")
+            if (targetParts.length > 1) {
+              let allPartsMatched = true;
+              const tempMatched = [];
+              let partSearchIdx = i;
+              for (const part of targetParts) {
+                let partFound = false;
+                while (partSearchIdx < spokenWords.length && partSearchIdx <= i + targetParts.length + 2) {
+                  if (!matchedSpokenIndices.has(partSearchIdx)) {
+                    const sw = speechEngine.matchAlgo.normalizer.normalize(spokenWords[partSearchIdx], normOpts);
+                    if (speechEngine.matchAlgo.isWordMatch(sw, part)) {
+                      partFound = true;
+                      tempMatched.push(partSearchIdx);
+                      partSearchIdx++;
+                      break;
+                    }
+                  }
+                  partSearchIdx++;
+                }
+                if (!partFound) {
+                  allPartsMatched = false;
+                  break;
+                }
+              }
+              if (allPartsMatched) {
+                found = true;
+                tempMatched.forEach(idx => matchedSpokenIndices.add(idx));
+                lastSpokenMatchedIdx = Math.max(...tempMatched);
+                break;
+              }
             }
           }
           
