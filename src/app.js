@@ -8,7 +8,7 @@ import { InteractiveTour } from './components/InteractiveTour.js';
 import { DbManager } from './utils/DbManager.js';
 
 // Force update if app version has changed (handles aggressive PWA caching)
-const CURRENT_APP_VERSION = 'v120';
+const CURRENT_APP_VERSION = 'v121';
 if (localStorage.getItem('app_cache_ver') !== CURRENT_APP_VERSION) {
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.getRegistrations().then(regs => {
@@ -87,6 +87,8 @@ const initApp = async () => {
     playBtn: document.getElementById('btn-play-pause'),
     btnRepeat: document.getElementById('btn-repeat'),
     btnPlayRecording: document.getElementById('btn-play-recording'),
+    iconPlayRec: document.querySelector('.icon-play-rec'),
+    iconPauseRec: document.querySelector('.icon-pause-rec'),
     iconPlay: document.querySelector('.icon-play'),
     iconPause: document.querySelector('.icon-pause'),
     nextBtn: document.getElementById('btn-next'),
@@ -386,7 +388,12 @@ const initApp = async () => {
 
     // Reset recording buttons
     ui.btnPlayRecording.disabled = true;
-    ui.btnPlayRecording.style.opacity = '0.5';
+    ui.btnPlayRecording.style.opacity = '0.35';
+    ui.btnPlayRecording.classList.remove('has-recording', 'is-playing');
+    if (ui.iconPlayRec && ui.iconPauseRec) {
+      ui.iconPlayRec.style.display = 'block';
+      ui.iconPauseRec.style.display = 'none';
+    }
     AppState.speech.detectedText = '';
     AppState.speech.latestScore = 0;
     ayahErrorCount = 0;
@@ -401,13 +408,17 @@ const initApp = async () => {
         currentRecordedBlob = blob;
         ui.btnPlayRecording.disabled = false;
         ui.btnPlayRecording.style.opacity = '1';
-        ui.btnPlayRecording.style.color = '#0ea5e9'; // Blue indicates a saved recording exists
+        ui.btnPlayRecording.classList.add('has-recording');
+        ui.btnPlayRecording.style.color = '';
         
         // Restore echoEnabled state from report if available
         const match = AppState.reports.find(r => r.surahId === AppState.current.surah.id && r.ayahNumber === ayahNumber);
         currentRecordedEchoEnabled = match ? !!match.echoEnabled : false;
       } else {
-        ui.btnPlayRecording.style.color = ''; // Default grey
+        ui.btnPlayRecording.disabled = true;
+        ui.btnPlayRecording.style.opacity = '0.35';
+        ui.btnPlayRecording.classList.remove('has-recording', 'is-playing');
+        ui.btnPlayRecording.style.color = '';
         currentRecordedEchoEnabled = false;
       }
     });
@@ -853,7 +864,7 @@ const initApp = async () => {
       const item = document.createElement('div');
       item.className = 'suggestion-item';
       item.textContent = `سورة ${s.name}`;
-      item.addEventListener('mousedown', (e) => {
+      item.addEventListener('pointerdown', (e) => {
         // Prevent input blur before click is registered
         e.preventDefault(); 
         ui.surahInput.value = `سورة ${s.name}`;
@@ -864,6 +875,16 @@ const initApp = async () => {
     });
     
     ui.surahSuggestions.style.display = 'block';
+  }
+
+  // Single-word peek hint in test mode (hide-text)
+  if (ui.quranDisplay) {
+    ui.quranDisplay.addEventListener('click', (e) => {
+      const word = e.target.closest('.word');
+      if (word && ui.quranDisplay.classList.contains('text-hidden')) {
+        word.classList.toggle('hint-revealed');
+      }
+    });
   }
 
   ui.surahInput.addEventListener('input', (e) => {
@@ -1485,12 +1506,17 @@ const initApp = async () => {
     const { blob, surahId, ayahId, detectedText, score, duration } = e.detail;
     
     // Update play button only if the recording belongs to the currently displayed Ayah
-    if (AppState.current.surah.id === surahId && AppState.current.ayah.id === ayahId) {
+    if (AppState.current.surah.id == surahId && AppState.current.ayah.id == ayahId) {
       currentRecordedBlob = blob;
       currentRecordedEchoEnabled = AppState.speech.liveEchoEnabled;
       ui.btnPlayRecording.disabled = false;
       ui.btnPlayRecording.style.opacity = '1';
-      ui.btnPlayRecording.style.color = '#0ea5e9';
+      ui.btnPlayRecording.classList.add('has-recording');
+      ui.btnPlayRecording.classList.remove('is-playing');
+      if (ui.iconPlayRec && ui.iconPauseRec) {
+        ui.iconPlayRec.style.display = 'block';
+        ui.iconPauseRec.style.display = 'none';
+      }
     }
 
     // Mark or unmark as mastered based on score (>= 78%)
@@ -1645,6 +1671,19 @@ const initApp = async () => {
   let currentPlayingSource = null;
   let currentPlayingCtx = null;
 
+  function setRecordingPlayingState(isPlaying) {
+    if (!ui.btnPlayRecording) return;
+    if (isPlaying) {
+      ui.btnPlayRecording.classList.add('is-playing');
+      if (ui.iconPlayRec) ui.iconPlayRec.style.display = 'none';
+      if (ui.iconPauseRec) ui.iconPauseRec.style.display = 'block';
+    } else {
+      ui.btnPlayRecording.classList.remove('is-playing');
+      if (ui.iconPlayRec) ui.iconPlayRec.style.display = 'block';
+      if (ui.iconPauseRec) ui.iconPauseRec.style.display = 'none';
+    }
+  }
+
   ui.btnPlayRecording.addEventListener('click', async () => {
     if (!currentRecordedBlob) return;
     
@@ -1662,7 +1701,7 @@ const initApp = async () => {
         try { currentPlayingCtx.close(); } catch(e) {}
         currentPlayingCtx = null;
       }
-      ui.btnPlayRecording.style.color = '';
+      setRecordingPlayingState(false);
       return;
     }
 
@@ -1670,7 +1709,7 @@ const initApp = async () => {
     if (currentPlayingRecording) {
       currentPlayingRecording.pause();
       currentPlayingRecording = null;
-      ui.btnPlayRecording.style.color = '';
+      setRecordingPlayingState(false);
       return;
     }
 
@@ -1683,16 +1722,16 @@ const initApp = async () => {
       const url = URL.createObjectURL(currentRecordedBlob);
       fallbackAudio.src = url;
       currentPlayingRecording = fallbackAudio;
-      ui.btnPlayRecording.style.color = 'var(--accent-primary)';
+      setRecordingPlayingState(true);
       
       fallbackAudio.play().catch(err => {
         console.error("Playback failed", err);
-        ui.btnPlayRecording.style.color = '';
+        setRecordingPlayingState(false);
         currentPlayingRecording = null;
       });
 
       fallbackAudio.onended = () => {
-        ui.btnPlayRecording.style.color = '';
+        setRecordingPlayingState(false);
         currentPlayingRecording = null;
       };
     };
@@ -1796,10 +1835,10 @@ const initApp = async () => {
             }
             
             currentPlayingSource.start(0);
-            ui.btnPlayRecording.style.color = 'var(--accent-primary)';
+            setRecordingPlayingState(true);
             
             currentPlayingSource.onended = () => {
-              ui.btnPlayRecording.style.color = '';
+              setRecordingPlayingState(false);
               currentPlayingSource = null;
               if (currentPlayingCtx) {
                 try { currentPlayingCtx.close(); } catch(e) {}
@@ -1930,7 +1969,7 @@ const initApp = async () => {
     { target: '#btn-play-pause', title: 'مشغل التلاوة الصوتية ▶️', description: 'اضغط هنا للاستماع لتلاوة الآية الحالية بصوت الشيخ المختار لتصحيح النطق ومحاكاة التلاوة.' },
     { target: '#btn-repeat', title: 'تكرار الآية تلقائياً 🔁', description: 'فعل هذا الخيار لتكرار تلاوة الآية الحالية بشكل مستمر دون توقف، وهو أمر أساسي لتثبيت الحفظ في الذهن.' },
     { target: '#btn-mic', title: 'بدء التسميع الصوتي 🎤', description: 'اضغط هنا وتحدث لتسميع الآية. سيقوم التطبيق بذكاء بتقييم حفظك ونطقك وتلوين الكلمات (أخضر للصحيح، برتقالي للتجويد، أحمر للنسيان).' },
-    { target: '#chk-live-echo', title: 'صدى الصوت (صدى المسجد) 📻', description: 'فعل خيار (صدى) للاستماع لتلاوتك الذاتية بصدى صوتي رائع ومؤثر يحاكي مساجد التلاوة ومكبرات الصوت.' },
+    { target: '#btn-echo', title: 'صدى الصوت (صدى المسجد) 📻', description: 'فعل خيار (صدى) للاستماع لتلاوتك الذاتية بصدى صوتي رائع ومؤثر يحاكي مساجد التلاوة ومكبرات الصوت.' },
     { target: '#btn-switch-role', title: 'نظام المعلم والتسميعات 👥', description: 'اضغط هنا لتبديل حسابك إلى لوحة المعلم لمراجعة تسميعات الطلاب وتقييمها، أو لإرسال تلاوتك لمعلمك الخاص.' },
     { target: '#btn-child-mode', title: 'وضع الأطفال والتحفيز 🧒🎈', description: 'يحول التطبيق إلى واجهة ذات ألوان مبهجة وتأثيرات بصرية جذابة مع نجوم متحركة (⭐) لتشجيع الأطفال وتكريمهم عند التسميع الصحيح.' },
     { target: '#btn-more-menu', title: 'المزيد من الأدوات (وضع الاستماع) ⚙️', description: 'اضغط هنا لفتح خيارات إضافية مثل (وضع الاستماع المتتالي لآيات وسور متعددة)، دعم التطبيق، وتحديث الكاش.' }

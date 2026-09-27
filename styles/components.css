@@ -98,10 +98,85 @@ select:focus {
 
 /* Quran Display */
 .quran-card {
-  min-height: 250px;
+  min-height: 220px;
   height: auto;
+  max-height: calc(100vh - 330px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scroll-behavior: smooth;
+  scrollbar-width: thin;
+  scrollbar-color: var(--border-light) transparent;
   padding: 24px;
   display: block; /* Normal block flow to prevent flex centering overflow */
+}
+
+.quran-card::-webkit-scrollbar {
+  width: 5px;
+}
+.quran-card::-webkit-scrollbar-track {
+  background: transparent;
+}
+.quran-card::-webkit-scrollbar-thumb {
+  background: var(--border-light);
+  border-radius: 4px;
+}
+
+/* Card Top Actions: Info and Play Recording */
+.card-top-actions {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  z-index: 5;
+}
+
+.ayah-info-btn, .ayah-rec-btn {
+  background: transparent;
+  border: none;
+  color: var(--text-secondary);
+  cursor: pointer;
+  padding: 6px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+}
+
+.ayah-info-btn:hover {
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+}
+
+.ayah-rec-btn:disabled {
+  opacity: 0.35 !important;
+  cursor: not-allowed !important;
+  color: var(--text-secondary) !important;
+}
+
+.ayah-rec-btn.has-recording {
+  color: var(--accent-primary) !important;
+  opacity: 1 !important;
+  cursor: pointer !important;
+}
+
+.ayah-rec-btn.has-recording:hover {
+  background: rgba(14, 165, 233, 0.12);
+  transform: scale(1.08);
+}
+
+.ayah-rec-btn.is-playing {
+  color: #22c55e !important;
+  opacity: 1 !important;
+  animation: pulse-recording 1.2s infinite ease-in-out;
+}
+
+@keyframes pulse-recording {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.15); }
+  100% { transform: scale(1); }
 }
 
 .ayah-wrapper {
@@ -608,6 +683,8 @@ input[type="range"] {
   }
   .quran-card {
     min-height: 140px !important;
+    max-height: calc(100vh - 330px) !important;
+    overflow-y: auto !important;
     padding: 16px !important;
     border-radius: 12px !important;
   }
@@ -638,11 +715,11 @@ input[type="range"] {
     gap: 14px !important;
   }
   .nav-controls {
-    display: grid !important;
-    grid-template-columns: 1fr auto 1fr !important;
+    display: flex !important;
+    justify-content: space-between !important;
     align-items: center !important;
     width: 100% !important;
-    gap: 0 !important;
+    gap: 8px !important;
   }
 }
 
@@ -933,7 +1010,14 @@ input[type="range"] {
   color: var(--accent-success, #10b981) !important;
 }
 
-#current-ayah-display.text-hidden:active .word,
+#current-ayah-display.text-hidden .word.hint-revealed {
+  filter: blur(0px) !important;
+  color: var(--accent-primary) !important;
+  background: rgba(14, 165, 233, 0.12) !important;
+  border-radius: 6px;
+  text-shadow: 0 0 10px rgba(14, 165, 233, 0.4);
+}
+
 #current-ayah-display.text-hidden.reveal-words .word {
   filter: blur(0px) !important;
 }
@@ -980,11 +1064,11 @@ input[type="range"] {
   min-width: 220px;
   z-index: 1050;
   padding: 6px 0;
-  animation: dropdown-fade-in 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .dropdown-menu.show {
   display: block;
+  animation: dropdown-fade-in 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .dropdown-item {

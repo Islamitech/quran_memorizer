@@ -114,7 +114,7 @@ export class KaraokeEngine {
   
   scrollToWord(wordElement) {
     if (!wordElement) return;
-    const container = wordElement.closest('.quran-display');
+    const container = wordElement.closest('.quran-card');
     if (!container) return;
     
     const containerRect = container.getBoundingClientRect();
