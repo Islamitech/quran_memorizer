@@ -1,6 +1,6 @@
 // sw.js - Service Worker المتقدم
 
-const CACHE_VERSION = 'v119';
+const CACHE_VERSION = 'v120';
 const CACHE_NAMES = {
   static: `static-${CACHE_VERSION}`,
   audio: `audio-${CACHE_VERSION}`,
@@ -29,15 +29,14 @@ const STATIC_ASSETS = [
   './src/engines/MatchAlgorithm.js',
   './src/engines/TextNormalizer.js',
   './src/components/InteractiveTour.js',
-  './src/utils/DbManager.js',
-  './src/utils/Validator.js'
+  './src/utils/DbManager.js'
 ];
 
 // استراتيجيات التخزين المختلفة
 const STRATEGIES = {
   'cache-first': async (request) => {
     const cache = await caches.open(CACHE_NAMES.static);
-    const cachedResponse = await cache.match(request);
+    const cachedResponse = await cache.match(request, { ignoreSearch: true });
     
     if (cachedResponse) {
       // تحديث الكاش في الخلفية
@@ -59,14 +58,16 @@ const STRATEGIES = {
       const response = await fetch(request);
       
       if (response.ok) {
-        const cache = await caches.open(CACHE_NAMES.quran);
+        const isQuranApi = request.url.includes('alquran.cloud') || request.url.includes('/api/');
+        const targetCacheName = isQuranApi ? CACHE_NAMES.quran : CACHE_NAMES.static;
+        const cache = await caches.open(targetCacheName);
         cache.put(request, response.clone());
       }
       
       return response;
     } catch (error) {
-      const cache = await caches.open(CACHE_NAMES.quran);
-      const cachedResponse = await cache.match(request);
+      // البحث عبر كافة الكاشات مع تجاهل معاملات البحث (?v=...)
+      const cachedResponse = await caches.match(request, { ignoreSearch: true });
       
       if (cachedResponse) return cachedResponse;
       

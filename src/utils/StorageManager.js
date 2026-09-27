@@ -38,16 +38,17 @@ export class StorageManager {
     if (!this.available) return false;
     try {
       const jsonData = JSON.stringify(data);
-      let compressedData = jsonData;
-      if (jsonData.length > 10000) {
-        compressedData = this.compress(jsonData);
-      }
-      localStorage.setItem(key, compressedData);
+      localStorage.setItem(key, jsonData);
       return true;
     } catch (error) {
       if (error.name === 'QuotaExceededError') {
         this.emergencyCleanup();
-        return false;
+        try {
+          localStorage.setItem(key, JSON.stringify(data));
+          return true;
+        } catch {
+          return false;
+        }
       }
       return false;
     }
@@ -58,48 +59,11 @@ export class StorageManager {
     try {
       const data = localStorage.getItem(key);
       if (!data) return defaultValue;
-      
-      let parsed;
-      try {
-        parsed = JSON.parse(data);
-      } catch {
-        const decompressed = this.decompress(data);
-        parsed = JSON.parse(decompressed);
-      }
-      return parsed;
+      return JSON.parse(data);
     } catch (error) {
+      console.warn(`Failed to parse stored data for key "${key}":`, error);
       return defaultValue;
     }
-  }
-  
-  compress(text) {
-    let compressed = '';
-    let count = 1;
-    for (let i = 0; i < text.length; i++) {
-      if (text[i] === text[i + 1]) {
-        count++;
-      } else {
-        compressed += text[i] + (count > 1 ? count : '');
-        count = 1;
-      }
-    }
-    return compressed;
-  }
-  
-  decompress(text) {
-    let decompressed = '';
-    let i = 0;
-    while (i < text.length) {
-      const char = text[i];
-      let count = '';
-      i++;
-      while (i < text.length && /[0-9]/.test(text[i])) {
-        count += text[i];
-        i++;
-      }
-      decompressed += char.repeat(count ? parseInt(count) : 1);
-    }
-    return decompressed;
   }
   
   emergencyCleanup() {
