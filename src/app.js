@@ -1308,12 +1308,12 @@ const initApp = async () => {
           const targetParts = targetWord.split(' ').filter(p => p.length > 0);
           
           let found = false;
-          // Search only forward from the last matched spoken index to enforce strict sequential pronunciation order
+          // Search strictly forward — only 2 positions ahead to prevent word-jumping
           const searchStart = lastSpokenMatchedIdx + 1;
-          const searchEnd = Math.min(spokenWords.length, searchStart + 6); // Search up to 6 words ahead for flexibility
+          const searchEnd = Math.min(spokenWords.length, searchStart + 2);
           
           for (let i = searchStart; i < searchEnd; i++) {
-            if (matchedSpokenIndices.has(i)) continue; // Don't match the same spoken word multiple times
+            if (matchedSpokenIndices.has(i)) continue;
             
             const cleanSpoken = speechEngine.matchAlgo.normalizer.normalize(spokenWords[i], normOpts);
             
@@ -1321,18 +1321,19 @@ const initApp = async () => {
             if (speechEngine.matchAlgo.isWordMatch(cleanSpoken, targetWord)) {
               found = true;
               lastSpokenMatchedIdx = i;
-              matchedSpokenIndices.add(i); // Mark this spoken word as consumed
+              matchedSpokenIndices.add(i);
               break;
             }
 
-            // 2. Multi-part match (e.g. target is "يا ايها" and spoken has ["يا", "ايها"], or "الف لام ميم")
+            // 2. Multi-part match (e.g. target normalizes to "يا ايها" or "الف لام ميم")
             if (targetParts.length > 1) {
               let allPartsMatched = true;
               const tempMatched = [];
               let partSearchIdx = i;
+              const partLimit = i + targetParts.length + 1; // tight window: only as wide as the number of parts
               for (const part of targetParts) {
                 let partFound = false;
-                while (partSearchIdx < spokenWords.length && partSearchIdx <= i + targetParts.length + 2) {
+                while (partSearchIdx < spokenWords.length && partSearchIdx <= partLimit) {
                   if (!matchedSpokenIndices.has(partSearchIdx)) {
                     const sw = speechEngine.matchAlgo.normalizer.normalize(spokenWords[partSearchIdx], normOpts);
                     if (speechEngine.matchAlgo.isWordMatch(sw, part)) {
@@ -1370,33 +1371,36 @@ const initApp = async () => {
       // Relaxed matching check: accepts if score >= 78% (allowing speech-to-text minor word/pronunciation variations)
       const scoreCorrect = score >= 0.78;
       
-      // To prevent premature ending, ensure they have reached the end of the ayah:
-      // 1. Spoken words length must be at least refWordsCount - 1
-      // 2. Either the last word or second-to-last word of the reference must be matched somewhere in the spoken text, or spoken words count is >= refWordsCount
+      // Strict end-of-ayah check: the LAST word MUST be detected in the spoken transcript.
+      // This prevents premature success when the score hits 0.78 before the last word is said.
       let isCorrect = scoreCorrect;
       if (scoreCorrect && refWordsCount > 1) {
         const normOpts = { removeDiacritics: true, unifyLetters: true };
         const cleanLastWord = speechEngine.matchAlgo.normalizer.normalize(refWords[refWordsCount - 1], normOpts);
         const cleanSecondLastWord = speechEngine.matchAlgo.normalizer.normalize(refWords[refWordsCount - 2], normOpts);
         
+        // Check if the last word of the reference appears anywhere in spoken text
         const isLastWordMatched = spokenWords.some(sw => {
           const cleanSw = speechEngine.matchAlgo.normalizer.normalize(sw, normOpts);
           return speechEngine.matchAlgo.isWordMatch(cleanSw, cleanLastWord);
         });
         
+        // Check second-to-last (only used as a safety valve, not standalone)
         const isSecondLastMatched = spokenWords.some(sw => {
           const cleanSw = speechEngine.matchAlgo.normalizer.normalize(sw, normOpts);
           return speechEngine.matchAlgo.isWordMatch(cleanSw, cleanSecondLastWord);
         });
         
-        const hasReachedEnd = (spokenWordsCount >= refWordsCount - 1) && 
-                             (isLastWordMatched || isSecondLastMatched || spokenWordsCount >= refWordsCount);
+        // Primary: last word must be spoken AND count must be >= refCount - 1
+        // Safety valve: if user spoke significantly MORE than reference (overran into next ayah) accept
+        const hasReachedEnd = (spokenWordsCount >= refWordsCount - 1) && isLastWordMatched;
+        const isOverrun = spokenWordsCount >= refWordsCount + 2 && isSecondLastMatched;
         
-        isCorrect = hasReachedEnd;
+        isCorrect = hasReachedEnd || isOverrun;
       }
 
-      // Check if real-time revealed ratio is high enough to trigger success (e.g. >= 75% of words are green)
-      // And ensure they actually finished the Ayah by requiring the last word to be revealed
+      // Check if real-time revealed ratio is high enough to trigger success (>= 75% of words revealed)
+      // Requires the LAST word span to be revealed — so it cannot fire before last word is spoken
       const wordSpansList = Array.from(ui.quranDisplay.querySelectorAll('.word:not(.ayah-number-marker)'));
       const totalWords = wordSpansList.length;
       const revealedWords = wordSpansList.filter(span => span.classList.contains('revealed')).length;
@@ -1407,6 +1411,7 @@ const initApp = async () => {
           isCorrect = true;
         }
       }
+
 
       // Mark as mastered if correct, otherwise mark as unmastered (for logical accuracy)
       if (isCorrect) {
